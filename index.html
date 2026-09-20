@@ -47,18 +47,6 @@
   .btn.primary{ background:var(--amber); color:#1c1a17; border-color:var(--amber); }
   .btn.ghost{ color:var(--text); }
 
-  .stage-mark{
-    margin-top:50px; height:120px; border-radius:10px;
-    background:
-      repeating-linear-gradient(90deg, var(--panel) 0 2px, transparent 2px 22px),
-      linear-gradient(180deg, var(--panel-2), var(--panel));
-    border:1px solid var(--line);
-    display:flex; align-items:center; padding:0 24px; gap:18px; overflow:hidden;
-  }
-  .stage-mark .dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
-  .stage-mark .bar{ height:34px; flex:1; border-radius:3px; background:var(--line); position:relative; overflow:hidden; }
-  .stage-mark .bar i{ position:absolute; inset:0; background:linear-gradient(90deg, var(--amber), var(--green)); opacity:.5; }
-
   section{ padding:50px 0; border-top:1px solid var(--line); }
   section h2{ font-size:22px; margin:0 0 8px; }
   section p.section-sub{ color:var(--text-dim); font-size:14.5px; margin:0 0 30px; max-width:560px; }
@@ -123,14 +111,6 @@
     <div class="cta-row">
       <a class="btn primary" href="app.html">Open Crate — it's free</a>
       <a class="btn ghost" href="manual.html">Read the quickstart</a>
-    </div>
-    <div class="stage-mark" aria-hidden="true">
-      <div class="dot" style="background:var(--amber);"></div>
-      <div class="bar"><i style="width:35%"></i></div>
-      <div class="dot" style="background:var(--green);"></div>
-      <div class="bar"><i style="width:70%"></i></div>
-      <div class="dot" style="background:var(--amber);"></div>
-      <div class="bar"><i style="width:50%"></i></div>
     </div>
   </header>
 
