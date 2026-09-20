@@ -2,7 +2,7 @@
 
 A free, local-only tool for organizing a Rekordbox library and building new crates from it.
 
-**Live site:** _add your GitHub Pages URL here once it's deployed_
+**Live site:** https://gtirimbo.github.io/Crate/
 
 ## What it does
 
@@ -22,9 +22,6 @@ A free, local-only tool for organizing a Rekordbox library and building new crat
 
 No build step. Clone the repo and open `index.html` in a browser, or serve the folder with anything static (`python3 -m http.server`, etc).
 
-## Deploying
-
-This repo is set up to be served directly by GitHub Pages from the `main` branch — see the guide the author used at [claude.ai](https://claude.ai) or just enable Pages in the repo settings and point it at `main` / root.
 
 ## Status
 
