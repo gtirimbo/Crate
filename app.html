@@ -78,6 +78,7 @@
   .pagetab.on{ background:var(--panel); border-color:var(--amber); color:var(--amber); }
 
   .grid{ display:grid; grid-template-columns:230px 1fr; gap:20px; }
+  .grid.full{ grid-template-columns:1fr; }
   @media (max-width:820px){ .grid{ grid-template-columns:1fr; } }
 
   .rail{ display:flex; flex-direction:column; gap:18px; }
@@ -140,9 +141,6 @@
   .steps{ display:flex; flex-direction:column; gap:20px; }
   .step{ border-left:2px solid var(--line); padding-left:16px; }
   .step .steplabel{ font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-bottom:8px; }
-  .sourcelist{ display:flex; flex-wrap:wrap; gap:8px; }
-  .sourcechip{ font-size:12px; padding:6px 11px; border-radius:16px; border:1px solid var(--line); background:var(--field); color:var(--text-dim); cursor:pointer; }
-  .sourcechip.on{ background:var(--amber); border-color:var(--amber); color:#1c1a17; }
   .filtergrid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; }
   .filtergrid label{ display:block; font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-bottom:6px; }
   .rangepair{ display:flex; gap:8px; }
@@ -218,31 +216,33 @@
   .dashkeyaxis{ display:flex; gap:8px; margin-top:6px; }
   .dashkeyaxis span{ flex:1; text-align:center; font-family:var(--mono); font-size:10.5px; color:var(--text-faint); }
 
-  /* ---------- graph ---------- */
+  /* ---------- shared dropdown multi-select (graph + builder) ---------- */
   .graphfilterbar{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
-  .graphdropdown{ position:relative; }
-  .graphdropbtn{
+  .dropdown{ position:relative; }
+  .dropbtn{
     font-family:var(--sans); font-size:12.5px; padding:7px 12px; border-radius:6px;
     border:1px solid var(--line); background:var(--field); color:var(--text-dim);
     cursor:pointer; display:flex; align-items:center; gap:7px; white-space:nowrap;
   }
-  .graphdropbtn:hover{ border-color:var(--text-faint); color:var(--text); }
-  .graphdropdown.open .graphdropbtn{ border-color:var(--amber); color:var(--amber); }
-  .graphdropbtn .car{ font-size:9px; color:var(--text-faint); }
-  .graphdroppanel{
+  .dropbtn:hover{ border-color:var(--text-faint); color:var(--text); }
+  .dropdown.open .dropbtn{ border-color:var(--amber); color:var(--amber); }
+  .dropbtn .car{ font-size:9px; color:var(--text-faint); }
+  .droppanel{
     display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:20;
     min-width:210px; max-width:280px; max-height:260px; overflow-y:auto;
     background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:8px;
     box-shadow:0 10px 28px rgba(0,0,0,.45);
   }
-  .graphdropdown.open .graphdroppanel{ display:block; }
-  .graphdroppanel .opt{ display:flex; align-items:center; gap:8px; padding:6px 7px; border-radius:5px; font-size:12.5px; color:var(--text-dim); cursor:pointer; }
-  .graphdroppanel .opt:hover{ background:var(--panel-2); color:var(--text); }
-  .graphdroppanel .opt input[type=checkbox]{ accent-color:var(--amber); }
-  .graphdroppanel .opt .check{ width:12px; display:inline-block; color:var(--amber); font-size:11px; flex-shrink:0; }
-  .graphdroppanel .opt.active{ color:var(--amber); }
-  .graphdroppanel .sep{ height:1px; background:var(--line-soft); margin:6px 2px; }
-  .graphdroppanel .rangepair{ margin:2px; }
+  .dropdown.open .droppanel{ display:block; }
+  .droppanel .opt{ display:flex; align-items:center; gap:8px; padding:6px 7px; border-radius:5px; font-size:12.5px; color:var(--text-dim); cursor:pointer; }
+  .droppanel .opt:hover{ background:var(--panel-2); color:var(--text); }
+  .droppanel .opt input[type=checkbox]{ accent-color:var(--amber); }
+  .droppanel .opt .check{ width:12px; display:inline-block; color:var(--amber); font-size:11px; flex-shrink:0; }
+  .droppanel .opt.active{ color:var(--amber); }
+  .droppanel .sep{ height:1px; background:var(--line-soft); margin:6px 2px; }
+  .droppanel .rangepair{ margin:2px; }
+  .droppanel .grouplabel{ font-family:var(--mono); font-size:10.5px; color:var(--text-faint); margin:8px 2px 4px; }
+  .droppanel .grouplabel:first-child{ margin-top:2px; }
   .graphtoolbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
   .graphtoolbar select, .graphtoolbar input[type=text]{ font-size:12px; padding:7px 9px; }
   .graphlegend{ font-family:var(--mono); font-size:11px; color:var(--text-faint); display:flex; align-items:center; gap:5px; margin-left:auto; }
@@ -367,7 +367,10 @@
           <div class="steps">
             <div class="step">
               <div class="steplabel">1 — pull tracks from</div>
-              <div class="sourcelist" id="sourceList"></div>
+              <div class="dropdown" id="sourceDropdown">
+                <button type="button" class="dropbtn" id="sourceDropBtn">All library <span class="car">▾</span></button>
+                <div class="droppanel" id="sourcePanel" style="min-width:260px;max-width:320px;"></div>
+              </div>
             </div>
 
             <div class="step">
@@ -389,12 +392,12 @@
                   <input type="text" id="textFilter" placeholder="in title, artist, tags, notes…">
                 </div>
               </div>
-              <div style="margin-top:12px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                  <label style="display:block;font-family:var(--mono);font-size:11px;color:var(--text-faint);">Genres</label>
-                  <button class="btn ghost small" id="manageGroupsBtn">Group genres…</button>
+              <div style="margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <div class="dropdown" id="genreDropdown">
+                  <button type="button" class="dropbtn" id="genreDropBtn">Genres: All <span class="car">▾</span></button>
+                  <div class="droppanel" id="genrePanel"></div>
                 </div>
-                <div class="chiprow" id="genreChips"></div>
+                <button class="btn ghost small" id="manageGroupsBtn">Group genres…</button>
               </div>
 
               <div id="groupEditor" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);">
@@ -523,8 +526,8 @@
           </div>
 
           <div class="dashsection">
-            <h3>Missing key &amp; BPM</h3>
-            <p class="note" style="margin:-6px 0 12px;">Rekordbox analyzes these from the audio, so Crate won't guess at them — fill them in by ear here and they're saved with the rest of your library.</p>
+            <h3>Missing genre, key &amp; BPM</h3>
+            <p class="note" style="margin:-6px 0 12px;">Type a genre in directly — it autocompletes from genres already in your library. BPM and key still need filling in by ear: Rekordbox analyzes those from the audio, so Crate won't guess at them.</p>
             <div id="dcMissingTable"></div>
           </div>
 
@@ -540,17 +543,17 @@
           <p class="note" style="margin:-8px 0 16px;">Tracks connected to the crates they belong to — pick one or more crates to focus on them, narrow by genre, BPM or key, or leave everything selected to see how the whole library is structured.</p>
 
           <div class="graphfilterbar">
-            <div class="graphdropdown" id="graphCrateDropdown">
-              <button type="button" class="graphdropbtn" id="graphCrateDropBtn">Crates: All <span class="car">▾</span></button>
-              <div class="graphdroppanel" id="graphCratePanel"></div>
+            <div class="dropdown" id="graphCrateDropdown">
+              <button type="button" class="dropbtn" id="graphCrateDropBtn">Crates: All <span class="car">▾</span></button>
+              <div class="droppanel" id="graphCratePanel"></div>
             </div>
-            <div class="graphdropdown" id="graphGenreDropdown">
-              <button type="button" class="graphdropbtn" id="graphGenreDropBtn">Genres: All <span class="car">▾</span></button>
-              <div class="graphdroppanel" id="graphGenrePanel"></div>
+            <div class="dropdown" id="graphGenreDropdown">
+              <button type="button" class="dropbtn" id="graphGenreDropBtn">Genres: All <span class="car">▾</span></button>
+              <div class="droppanel" id="graphGenrePanel"></div>
             </div>
-            <div class="graphdropdown" id="graphBpmDropdown">
-              <button type="button" class="graphdropbtn" id="graphBpmDropBtn">BPM: any <span class="car">▾</span></button>
-              <div class="graphdroppanel" id="graphBpmPanel">
+            <div class="dropdown" id="graphBpmDropdown">
+              <button type="button" class="dropbtn" id="graphBpmDropBtn">BPM: any <span class="car">▾</span></button>
+              <div class="droppanel" id="graphBpmPanel">
                 <div class="rangepair">
                   <input type="number" id="graphBpmMin" placeholder="min">
                   <input type="number" id="graphBpmMax" placeholder="max">
@@ -1182,27 +1185,34 @@
     const panel = document.getElementById('dcGenrePanel');
     if(!panel) return;
 
+    // Group every raw genre spelling that still appears on a track (mapped or not) by a
+    // normalized signature, then only surface a group as a suggestion if it still has at
+    // least one spelling that isn't already merged into that group's canonical value —
+    // otherwise a fully-merged group would keep re-appearing as a phantom suggestion.
     const rawGenres = Array.from(new Set(tracks.map(t=>t.genre).filter(Boolean)));
-    const unmapped = rawGenres.filter(g=> !genreMap[g]);
-    if(!unmapped.length){ panel.innerHTML = '<div class="empty" style="padding:10px 0;">No genre spelling issues found.</div>'; return; }
-
     const bySig = {};
-    unmapped.forEach(g=>{
+    rawGenres.forEach(g=>{
       const sig = normalizeGenreSig(g);
       (bySig[sig] = bySig[sig] || []).push(g);
     });
-    const canonicalValues = Array.from(new Set(Object.values(genreMap)));
+    const mappedToValues = new Set(Object.values(genreMap));
 
     const suggestions = [];
     Object.entries(bySig).forEach(([sig, variants])=>{
+      if(variants.length < 2) return;
       const counts = variants.map(v=>({ v, n: tracks.filter(t=>t.genre===v).length }));
-      const existingCanonicalMatch = canonicalValues.find(cv=> normalizeGenreSig(cv)===sig);
-      if(existingCanonicalMatch){
-        suggestions.push({ canonical: existingCanonicalMatch, variants: counts });
-      } else if(variants.length>1){
+      // prefer a spelling that's already an established canonical target, so a merge sticks
+      const alreadyCanonical = variants.find(v=> mappedToValues.has(v) && !genreMap[v]);
+      let canonical;
+      if(alreadyCanonical){
+        canonical = alreadyCanonical;
+      } else {
         counts.sort((a,b)=>b.n-a.n);
-        suggestions.push({ canonical: counts[0].v, variants: counts });
+        canonical = counts[0].v;
       }
+      const pending = counts.filter(c=> c.v!==canonical && genreMap[c.v]!==canonical);
+      if(!pending.length) return;
+      suggestions.push({ canonical, variants: pending });
     });
 
     if(!suggestions.length){ panel.innerHTML = '<div class="empty" style="padding:10px 0;">No genre spelling issues found.</div>'; return; }
@@ -1224,8 +1234,7 @@
     suggestions.forEach(s=>{
       const row = document.createElement('div');
       row.className = 'cleanrow';
-      const others = s.variants.filter(v=>v.v!==s.canonical);
-      const fromText = others.map(v=> `"${v.v}" (${v.n})`).join(', ') || 'inconsistent spelling';
+      const fromText = s.variants.map(v=> `"${v.v}" (${v.n})`).join(', ');
       row.innerHTML = `<span class="desc"><b>${escapeHtml(s.canonical)}</b> ← <span class="from">${escapeHtml(fromText)}</span></span>`;
       const btn = document.createElement('button');
       btn.className = 'btn small';
@@ -1325,6 +1334,9 @@
     document.getElementById('pageDataClean').style.display = page==='dataclean' ? '' : 'none';
     document.getElementById('pageGraph').style.display = page==='graph' ? '' : 'none';
     document.querySelectorAll('.pagetab').forEach(b=> b.classList.toggle('on', b.dataset.page===page));
+    const showRail = page==='library';
+    document.querySelector('.rail').style.display = showRail ? '' : 'none';
+    document.querySelector('.grid').classList.toggle('full', !showRail);
     if(page==='dashboard') renderDashboard();
     if(page==='dataclean') renderDataClean();
     if(page==='graph') renderGraph(); else stopGraphSim();
@@ -1441,17 +1453,26 @@
 
   // ---------------- builder ----------------
   let selectedSources = new Set();
+  function updateSourceLabel(){
+    const btn = document.getElementById('sourceDropBtn');
+    const isAll = selectedSources.has('__all__') || selectedSources.size===0;
+    const label = isAll ? 'All library' : selectedSources.size+' source'+(selectedSources.size===1?'':'s')+' selected';
+    btn.innerHTML = escapeHtml(label) + ' <span class="car">▾</span>';
+  }
+
   function renderSourceList(){
-    const el = document.getElementById('sourceList');
+    const el = document.getElementById('sourcePanel');
     el.innerHTML = '';
-    const allChip = document.createElement('div');
-    allChip.className = 'sourcechip' + (selectedSources.has('__all__') ? ' on':'');
-    allChip.textContent = 'All library';
-    allChip.addEventListener('click', ()=>{
-      if(selectedSources.has('__all__')) selectedSources.delete('__all__'); else { selectedSources = new Set(['__all__']); }
+
+    const isAll = selectedSources.has('__all__') || selectedSources.size===0;
+    const allRow = document.createElement('div');
+    allRow.className = 'opt' + (isAll ? ' active' : '');
+    allRow.innerHTML = '<span class="check">'+(isAll?'✓':'')+'</span><span>All library</span>';
+    allRow.addEventListener('click', ()=>{
+      selectedSources = new Set(['__all__']);
       renderSourceList(); updateBuilder();
     });
-    el.appendChild(allChip);
+    el.appendChild(allRow);
 
     const rbPlaylists = playlists.filter(p=>p.source==='rekordbox');
     const fdPlaylists = playlists.filter(p=>p.source==='folder');
@@ -1466,69 +1487,81 @@
     });
     const folderNames = Object.keys(folderMap);
     if(folderNames.length){
-      addLabel(el, 'rekordbox — by folder');
+      addPanelLabel(el, 'rekordbox — by folder');
       folderNames.forEach(folder=>{
         const plsInFolder = folderMap[folder];
         const keys = plsInFolder.map(pl=>'pl:'+pl.key);
         const allSelected = keys.every(k=>selectedSources.has(k));
-        const chip = document.createElement('div');
-        chip.className = 'sourcechip' + (allSelected ? ' on':'');
-        chip.textContent = folder + ' — all ' + plsInFolder.length;
-        chip.title = 'Select every playlist inside "'+folder+'"';
-        chip.addEventListener('click', ()=>{
+        const row = document.createElement('div');
+        row.className = 'opt' + (allSelected ? ' active' : '');
+        row.title = 'Select every playlist inside "'+folder+'"';
+        row.innerHTML = '<span class="check">'+(allSelected?'✓':'')+'</span><span>'+escapeHtml(folder)+' — all '+plsInFolder.length+'</span>';
+        row.addEventListener('click', ()=>{
           selectedSources.delete('__all__');
           if(allSelected) keys.forEach(k=>selectedSources.delete(k));
           else keys.forEach(k=>selectedSources.add(k));
           renderSourceList(); updateBuilder();
         });
-        el.appendChild(chip);
+        el.appendChild(row);
       });
     }
 
     if(rbPlaylists.length){
-      addLabel(el, 'rekordbox — playlists');
-      rbPlaylists.forEach(pl=> addPlaylistChip(el, pl));
+      addPanelLabel(el, 'rekordbox — playlists');
+      rbPlaylists.forEach(pl=> addPlaylistOpt(el, pl));
     }
 
     if(fdPlaylists.length){
-      addLabel(el, 'from folders on disk');
-      fdPlaylists.forEach(pl=> addPlaylistChip(el, pl));
+      addPanelLabel(el, 'from folders on disk');
+      fdPlaylists.forEach(pl=> addPlaylistOpt(el, pl));
     }
 
     if(generated.length){
-      addLabel(el, 'your crates');
+      addPanelLabel(el, 'your crates');
       generated.forEach(g=>{
-        const chip = document.createElement('div');
-        chip.className = 'sourcechip' + (selectedSources.has('gen:'+g.id) ? ' on':'');
-        chip.textContent = g.name + ' (crate)';
-        chip.addEventListener('click', ()=>{
+        const row = document.createElement('label');
+        row.className = 'opt';
+        const chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.checked = selectedSources.has('gen:'+g.id);
+        chk.addEventListener('change', ()=>{
           selectedSources.delete('__all__');
           const key = 'gen:'+g.id;
           if(selectedSources.has(key)) selectedSources.delete(key); else selectedSources.add(key);
           renderSourceList(); updateBuilder();
         });
-        el.appendChild(chip);
+        const span = document.createElement('span');
+        span.textContent = g.name + ' (crate)';
+        row.appendChild(chk); row.appendChild(span);
+        el.appendChild(row);
       });
     }
+
+    updateSourceLabel();
   }
 
-  function addLabel(el, text){
+  function addPanelLabel(el, text){
     const label = document.createElement('div');
-    label.style.cssText = 'font-family:var(--mono);font-size:11px;color:var(--text-faint);width:100%;margin:8px 0 2px;';
+    label.className = 'grouplabel';
     label.textContent = text;
     el.appendChild(label);
   }
-  function addPlaylistChip(el, pl){
-    const chip = document.createElement('div');
-    chip.className = 'sourcechip' + (selectedSources.has('pl:'+pl.key) ? ' on':'');
-    chip.textContent = pl.path;
-    chip.addEventListener('click', ()=>{
+  function addPlaylistOpt(el, pl){
+    const row = document.createElement('label');
+    row.className = 'opt';
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.checked = selectedSources.has('pl:'+pl.key);
+    chk.addEventListener('change', ()=>{
       selectedSources.delete('__all__');
       const key = 'pl:'+pl.key;
       if(selectedSources.has(key)) selectedSources.delete(key); else selectedSources.add(key);
       renderSourceList(); updateBuilder();
     });
-    el.appendChild(chip);
+    const span = document.createElement('span');
+    span.textContent = pl.path;
+    row.appendChild(chk); row.appendChild(span);
+    el.appendChild(row);
   }
 
   function sourceTrackIds(){
@@ -1557,42 +1590,60 @@
   function allDistinctGenres(){
     return Array.from(new Set(tracks.map(t=>effectiveGenre(t)).filter(Boolean))).sort();
   }
+  function updateGenreLabel(){
+    const btn = document.getElementById('genreDropBtn');
+    const n = selectedGenres.size;
+    btn.innerHTML = (n===0 ? 'Genres: All' : 'Genres: '+n+' selected') + ' <span class="car">▾</span>';
+  }
+
   function populateGenreChips(){
-    const el = document.getElementById('genreChips');
+    const el = document.getElementById('genrePanel');
     const genres = allDistinctGenres();
     el.innerHTML = '';
-    if(!genres.length){ el.innerHTML = '<span class="crate-empty">no genre data in this library</span>'; return; }
+    if(!genres.length){ el.innerHTML = '<div class="crate-empty" style="padding:6px;">no genre data in this library</div>'; updateGenreLabel(); return; }
+
+    const allRow = document.createElement('div');
+    allRow.className = 'opt' + (selectedGenres.size===0 ? ' active' : '');
+    allRow.innerHTML = '<span class="check">'+(selectedGenres.size===0?'✓':'')+'</span><span>All genres</span>';
+    allRow.addEventListener('click', ()=>{ selectedGenres = new Set(); populateGenreChips(); updateBuilder(); });
+    el.appendChild(allRow);
 
     if(genreGroups.length){
+      const sep0 = document.createElement('div'); sep0.className = 'sep'; el.appendChild(sep0);
+      addPanelLabel(el, 'your groups');
       genreGroups.forEach(g=>{
         const allSelected = g.genres.length && g.genres.every(gn=>selectedGenres.has(gn));
-        const chip = document.createElement('div');
-        chip.className = 'genrechip' + (allSelected ? ' on':'');
-        chip.style.borderColor = 'var(--amber)';
-        chip.textContent = g.name;
-        chip.title = 'Group: ' + g.genres.join(', ');
-        chip.addEventListener('click', ()=>{
+        const row = document.createElement('div');
+        row.className = 'opt' + (allSelected ? ' active' : '');
+        row.title = 'Group: ' + g.genres.join(', ');
+        row.innerHTML = '<span class="check">'+(allSelected?'✓':'')+'</span><span>'+escapeHtml(g.name)+'</span>';
+        row.addEventListener('click', ()=>{
           if(allSelected) g.genres.forEach(gn=>selectedGenres.delete(gn));
           else g.genres.forEach(gn=>selectedGenres.add(gn));
           populateGenreChips(); updateBuilder();
         });
-        el.appendChild(chip);
+        el.appendChild(row);
       });
-      const div = document.createElement('div');
-      div.style.cssText = 'flex-basis:100%;height:0;';
-      el.appendChild(div);
     }
 
+    const sep = document.createElement('div'); sep.className = 'sep'; el.appendChild(sep);
     genres.forEach(g=>{
-      const chip = document.createElement('div');
-      chip.className = 'genrechip' + (selectedGenres.has(g) ? ' on' : '');
-      chip.textContent = g;
-      chip.addEventListener('click', ()=>{
+      const row = document.createElement('label');
+      row.className = 'opt';
+      const chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.checked = selectedGenres.has(g);
+      chk.addEventListener('change', ()=>{
         if(selectedGenres.has(g)) selectedGenres.delete(g); else selectedGenres.add(g);
         populateGenreChips(); updateBuilder();
       });
-      el.appendChild(chip);
+      const span = document.createElement('span');
+      span.textContent = g;
+      row.appendChild(chk); row.appendChild(span);
+      el.appendChild(row);
     });
+
+    updateGenreLabel();
   }
   function activeGenres(){
     return Array.from(selectedGenres);
@@ -1665,7 +1716,7 @@
   const GENRE_TAXONOMY = [
     ['House', ['house', 'garage']],
     ['Techno', ['techno', 'minimal', 'industrial']],
-    ['Trance', ['trance', 'psy']],
+    ['Trance', ['trance']], // not 'psy' alone — it would also catch "Psychedelic Rock" etc.; genuine psytrance tags already contain "trance"
     ['Drum & Bass', ['drum & bass', 'drum and bass', 'dnb', 'jungle', 'breakbeat', 'breaks']],
     ['Bass / Dubstep', ['dubstep', 'bass', 'trap', 'riddim', 'grime']],
     ['Disco / Funk', ['disco', 'funk']],
@@ -2700,17 +2751,29 @@ ${playlistNodes}
     });
   }
 
-  function renderMissingTable(missingKey, missingBpm){
+  function ensureGenreDatalist(){
+    let dl = document.getElementById('dcGenreDatalist');
+    if(!dl){
+      dl = document.createElement('datalist');
+      dl.id = 'dcGenreDatalist';
+      document.body.appendChild(dl);
+    }
+    dl.innerHTML = allDistinctGenres().map(g=>`<option value="${escapeHtml(g)}">`).join('');
+    return dl;
+  }
+
+  function renderMissingTable(missingGenre, missingKey, missingBpm){
     const el = document.getElementById('dcMissingTable');
-    const ids = new Set([...missingKey.map(t=>t.id), ...missingBpm.map(t=>t.id)]);
+    const ids = new Set([...missingGenre.map(t=>t.id), ...missingKey.map(t=>t.id), ...missingBpm.map(t=>t.id)]);
     const rows = tracks.filter(t=>ids.has(t.id));
-    if(!rows.length){ el.innerHTML = '<div class="empty" style="padding:10px 0;">Nothing missing — key and BPM are filled in on every track.</div>'; return; }
+    if(!rows.length){ el.innerHTML = '<div class="empty" style="padding:10px 0;">Nothing missing — genre, key and BPM are filled in on every track.</div>'; return; }
+    ensureGenreDatalist();
     const wrap = document.createElement('div');
     wrap.style.cssText = 'max-height:360px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;';
     const table = document.createElement('table');
     table.innerHTML = '<thead><tr>'
       + '<th style="padding:8px 10px;">Track</th>'
-      + '<th style="padding:8px 10px;">Genre</th>'
+      + '<th style="padding:8px 10px;width:150px;">Genre</th>'
       + '<th style="padding:8px 10px;width:90px;">BPM</th>'
       + '<th style="padding:8px 10px;width:110px;">Key</th>'
       + '</tr></thead><tbody></tbody>';
@@ -2719,12 +2782,18 @@ ${playlistNodes}
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td style="padding:8px 10px;"><div class="ttitle">${escapeHtml(t.name)}</div><div class="tartist">${escapeHtml(t.artist)}</div></td>
-        <td style="padding:8px 10px;color:var(--text-dim);">${escapeHtml(effectiveGenre(t))||'—'}</td>
-        <td style="padding:8px 10px;"><input type="number" step="0.1" min="0" value="${t.bpm||''}" style="width:76px;"></td>
-        <td style="padding:8px 10px;"><input type="text" value="${escapeHtml(t.key||'')}" style="width:90px;" placeholder="e.g. 8A"></td>
+        <td style="padding:8px 10px;"><input type="text" class="dc-genre" list="dcGenreDatalist" value="${escapeHtml(t.genre||'')}" style="width:140px;" placeholder="genre…"></td>
+        <td style="padding:8px 10px;"><input type="number" class="dc-bpm" step="0.1" min="0" value="${t.bpm||''}" style="width:76px;"></td>
+        <td style="padding:8px 10px;"><input type="text" class="dc-key" value="${escapeHtml(t.key||'')}" style="width:90px;" placeholder="e.g. 8A"></td>
       `;
-      const bpmInput = tr.querySelector('input[type=number]');
-      const keyInput = tr.querySelector('input[type=text]');
+      const genreInput = tr.querySelector('.dc-genre');
+      const bpmInput = tr.querySelector('.dc-bpm');
+      const keyInput = tr.querySelector('.dc-key');
+      genreInput.addEventListener('change', ()=>{
+        t.genre = genreInput.value.trim();
+        persistAllTrackData();
+        afterTrackFieldEdit();
+      });
       bpmInput.addEventListener('change', ()=>{
         const v = parseFloat(bpmInput.value);
         t.bpm = (v>0) ? v : 0;
@@ -2836,7 +2905,7 @@ ${playlistNodes}
     renderCleanupSuggestions();
     renderGenreFamiliesSummary();
     renderGenreFillSuggestions();
-    renderMissingTable(missingKey, missingBpm);
+    renderMissingTable(missingGenre, missingKey, missingBpm);
     renderDuplicateGroups(dupGroups);
   }
 
@@ -2862,24 +2931,24 @@ ${playlistNodes}
     renderGraph();
   }
 
-  function closeAllGraphDropdowns(except){
-    document.querySelectorAll('.graphdropdown.open').forEach(d=>{ if(d!==except) d.classList.remove('open'); });
+  function closeAllDropdowns(except){
+    document.querySelectorAll('.dropdown.open').forEach(d=>{ if(d!==except) d.classList.remove('open'); });
   }
-  let graphDropdownsReady = false;
-  function setupGraphDropdowns(){
-    if(graphDropdownsReady) return;
-    graphDropdownsReady = true;
-    document.querySelectorAll('.graphdropdown').forEach(wrap=>{
-      const btn = wrap.querySelector('.graphdropbtn');
+  let dropdownsReady = false;
+  function setupDropdowns(){
+    if(dropdownsReady) return;
+    dropdownsReady = true;
+    document.querySelectorAll('.dropdown').forEach(wrap=>{
+      const btn = wrap.querySelector('.dropbtn');
       btn.addEventListener('click', e=>{
         e.stopPropagation();
         const willOpen = !wrap.classList.contains('open');
-        closeAllGraphDropdowns();
+        closeAllDropdowns();
         if(willOpen) wrap.classList.add('open');
       });
-      wrap.querySelector('.graphdroppanel').addEventListener('click', e=> e.stopPropagation());
+      wrap.querySelector('.droppanel').addEventListener('click', e=> e.stopPropagation());
     });
-    document.addEventListener('click', ()=> closeAllGraphDropdowns());
+    document.addEventListener('click', ()=> closeAllDropdowns());
   }
 
   function updateGraphCrateLabel(){
@@ -3268,7 +3337,7 @@ ${playlistNodes}
     const page = document.getElementById('pageGraph');
     if(!page) return;
     setupGraphPanZoom();
-    setupGraphDropdowns();
+    setupDropdowns();
     renderGraphCratePanel();
     populateGraphKeySelect();
     renderGraphGenrePanel();
@@ -3363,6 +3432,7 @@ ${playlistNodes}
   // ---------------- init ----------------
   function renderAll(){
     document.getElementById('statusText').textContent = tracks.length ? tracks.length + ' tracks loaded' : '';
+    setupDropdowns();
     renderPlaylistList();
     renderGeneratedList();
     renderSourceList();
