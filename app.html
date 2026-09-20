@@ -145,10 +145,11 @@
 
   /* ---------- builder ---------- */
   .steps{ display:flex; flex-direction:column; gap:20px; }
-  .step{ border-left:2px solid var(--line); padding-left:16px; }
-  .step .steplabel{ font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-bottom:8px; }
+  .step{ border-left:2px solid var(--amber-dim); padding-left:16px; }
+  .step .steplabel{ font-family:var(--mono); font-size:13.5px; font-weight:400; color:var(--text); margin-bottom:10px; letter-spacing:.01em; }
+  .step .steplabel .stepnum{ color:var(--amber); }
   .filtergrid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; }
-  .filtergrid label{ display:block; font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-bottom:6px; }
+  .filtergrid label{ display:block; font-family:var(--mono); font-size:11px; color:var(--text-dim); margin-bottom:6px; }
   .rangepair{ display:flex; gap:8px; }
   .rangepair input{ width:0; flex:1; }
   .chiprow{ display:flex; flex-wrap:wrap; gap:6px; }
@@ -381,7 +382,7 @@
 
           <div class="steps">
             <div class="step">
-              <div class="steplabel">1 — pull tracks from</div>
+              <div class="steplabel"><span class="stepnum">1</span> — pull tracks from</div>
               <div class="dropdown" id="sourceDropdown">
                 <button type="button" class="dropbtn" id="sourceDropBtn">All library <span class="car">▾</span></button>
                 <div class="droppanel" id="sourcePanel" style="min-width:260px;max-width:320px;"></div>
@@ -389,7 +390,7 @@
             </div>
 
             <div class="step">
-              <div class="steplabel">2 — narrow it down</div>
+              <div class="steplabel"><span class="stepnum">2</span> — narrow it down</div>
               <div class="filtergrid">
                 <div>
                   <label>BPM range</label>
@@ -430,7 +431,7 @@
             </div>
 
             <div class="step">
-              <div class="steplabel">3 — order it</div>
+              <div class="steplabel"><span class="stepnum">3</span> — order it</div>
               <select id="orderSelect">
                 <option value="original">Keep original order</option>
                 <option value="bpmAsc">BPM, low to high</option>
@@ -1839,7 +1840,7 @@
   // could match more than one — the first match wins.
   const GENRE_TAXONOMY = [
     ['House', ['house', 'garage']],
-    ['Techno', ['techno', 'minimal', 'industrial']],
+    ['Techno', ['techno', 'minimal techno', 'industrial']], // not bare 'minimal' — it also catches "Minimal Wave" / "Post-Punk Minimal Wave", which are post-punk, not techno
     ['Trance', ['trance']], // not 'psy' alone — it would also catch "Psychedelic Rock" etc.; genuine psytrance tags already contain "trance"
     ['Drum & Bass', ['drum & bass', 'drum and bass', 'dnb', 'jungle', 'breakbeat', 'breaks']],
     ['Bass / Dubstep', ['dubstep', 'bass', 'trap', 'riddim', 'grime']],
