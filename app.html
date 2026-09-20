@@ -67,6 +67,12 @@
   .importzone h2{ margin:0 0 8px; font-size:18px; font-weight:400; }
   .importzone p{ margin:0; color:var(--text-dim); font-size:13px; max-width:420px; margin:0 auto; line-height:1.6; }
   .importzone .how{ margin-top:18px; font-family:var(--mono); font-size:11px; color:var(--text-faint); }
+  .importalt{ text-align:center; margin-top:16px; font-size:13px; color:var(--text-faint); }
+  .importalt button{
+    background:none; border:none; padding:0; margin:0; color:var(--amber);
+    font-family:var(--sans); font-size:13px; font-weight:400; cursor:pointer; text-decoration:underline;
+  }
+  .importalt button:hover{ color:var(--text); }
 
   /* ---------- layout ---------- */
   .pagetabs{ display:flex; gap:6px; margin-bottom:18px; }
@@ -294,6 +300,7 @@
       <div class="how">tap anywhere here to choose the file</div>
       <input type="file" id="importZoneInput" accept=".xml">
     </div>
+    <div class="importalt">No library handy? <button type="button" id="loadDemoBtn">Load a demo library</button> to poke around first — a small made-up one, with a few messy tracks left in on purpose.</div>
   </div>
 
   <div id="mainSection" style="display:none;">
@@ -833,27 +840,99 @@
     banner.style.display = 'block';
   }
 
+  function applyImportedXml(text){
+    try{
+      rawXmlText = text;
+      const parsed = parseXML(rawXmlText);
+      const oldTracks = tracks, oldPlaylists = playlists;
+      tracks = parsed.tracks;
+      playlists = parsed.playlists;
+      reindexTracks();
+      saveJSON(LS_TRACKS, tracks);
+      saveJSON(LS_PLAYLISTS, playlists);
+      showMain();
+      renderAll();
+      showImportDiff(oldTracks, oldPlaylists, tracks, playlists);
+    }catch(err){
+      showToast(err.message || 'Could not read that file.');
+    }
+  }
+
   function handleImport(file){
     const reader = new FileReader();
-    reader.onload = e=>{
-      try{
-        rawXmlText = e.target.result;
-        const parsed = parseXML(rawXmlText);
-        const oldTracks = tracks, oldPlaylists = playlists;
-        tracks = parsed.tracks;
-        playlists = parsed.playlists;
-        reindexTracks();
-        saveJSON(LS_TRACKS, tracks);
-        saveJSON(LS_PLAYLISTS, playlists);
-        showMain();
-        renderAll();
-        showImportDiff(oldTracks, oldPlaylists, tracks, playlists);
-      }catch(err){
-        showToast(err.message || 'Could not read that file.');
-      }
-    };
+    reader.onload = e=> applyImportedXml(e.target.result);
     reader.readAsText(file);
   }
+
+  // ---------------- demo library ----------------
+  // A small, entirely fictional Rekordbox export — some genre-spelling
+  // variants, a duplicate, and a few tracks missing genre/key/BPM — so the
+  // health checks, Data Cleaning, Dashboard and Graph all have something to
+  // show on first look, without needing a real library.
+  const DEMO_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<DJ_PLAYLISTS Version="1.0.0">
+<PRODUCT Name="rekordbox" Version="6.0.0" Company="Pioneer DJ"/>
+<COLLECTION Entries="26">
+<TRACK TrackID="1" Name="Nightbloom" Artist="Solene Vane" Genre="House" AverageBpm="124.00" Tonality="8A" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/nightbloom.mp3" Year="2021" Label="Bloomcast" TotalTime="340"></TRACK>
+<TRACK TrackID="2" Name="Low Tide" Artist="Solene Vane" Genre="House" AverageBpm="122.50" Tonality="8A" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/low-tide.mp3" Year="2020" Label="Bloomcast" TotalTime="355"></TRACK>
+<TRACK TrackID="3" Name="Afterglow" Artist="Kilotone" Genre="Deep House" AverageBpm="121.00" Tonality="9A" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/afterglow.mp3" Year="2019" Label="Nightshade" TotalTime="365"></TRACK>
+<TRACK TrackID="4" Name="Wandering" Artist="Kilotone" Genre="deep house" AverageBpm="120.00" Tonality="9A" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/wandering.mp3" Year="2019" Label="Nightshade" TotalTime="350"></TRACK>
+<TRACK TrackID="5" Name="Concrete Bloom" Artist="Rema Solis" Genre="Tech House" AverageBpm="126.00" Tonality="10A" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/concrete-bloom.mp3" Year="2022" Label="Bloomcast" TotalTime="330"></TRACK>
+<TRACK TrackID="6" Name="Undertow" Artist="Rema Solis" Genre="tech house" AverageBpm="127.00" Tonality="10A" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/undertow.mp3" Year="2022" Label="Bloomcast" TotalTime="340"></TRACK>
+<TRACK TrackID="7" Name="Iron Signal" Artist="Vox Cartel" Genre="Techno" AverageBpm="130.00" Tonality="6B" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/iron-signal.mp3" Year="2018" Label="Greyline" TotalTime="380"></TRACK>
+<TRACK TrackID="8" Name="Gridlock" Artist="Vox Cartel" Genre="Techno" AverageBpm="132.00" Tonality="6B" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/gridlock.mp3" Year="2018" Label="Greyline" TotalTime="395"></TRACK>
+<TRACK TrackID="9" Name="Static Bloom" Artist="Nyra Kessel" Genre="Techno" AverageBpm="128.00" Tonality="7B" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/static-bloom.mp3" Year="2023" Label="Greyline" TotalTime="360"></TRACK>
+<TRACK TrackID="10" Name="Skyline Drift" Artist="Echo Parade" Genre="Trance" AverageBpm="138.00" Tonality="11A" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/skyline-drift.mp3" Year="2016" Label="Farline" TotalTime="400"></TRACK>
+<TRACK TrackID="11" Name="Mind Trip" Artist="Echo Parade" Genre="Psytrance" AverageBpm="142.00" Tonality="11A" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/mind-trip.mp3" Year="2016" Label="Farline" TotalTime="410"></TRACK>
+<TRACK TrackID="12" Name="Fault Lines" Artist="Juno Halcyon" Genre="Drum &amp; Bass" AverageBpm="174.00" Tonality="2A" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/fault-lines.mp3" Year="2021" Label="Subline" TotalTime="300"></TRACK>
+<TRACK TrackID="13" Name="Night Signal" Artist="Juno Halcyon" Genre="Drum &amp; Bass" AverageBpm="172.00" Tonality="2A" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/night-signal.mp3" Year="2021" Label="Subline" TotalTime="310"></TRACK>
+<TRACK TrackID="14" Name="Corner Store" Artist="MC Trellis" Genre="Hip Hop" AverageBpm="92.00" Tonality="5A" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/corner-store.mp3" Year="2019" Label="Streetcast" TotalTime="220"></TRACK>
+<TRACK TrackID="15" Name="Late Checkout" Artist="MC Trellis" Genre="Hip Hop" AverageBpm="90.00" Tonality="5A" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/late-checkout.mp3" Year="2019" Label="Streetcast" TotalTime="210"></TRACK>
+<TRACK TrackID="16" Name="Velvet Rope" Artist="Disco Halide" Genre="Disco" AverageBpm="120.00" Tonality="4B" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/velvet-rope.mp3" Year="1998" Label="Halide" TotalTime="280"></TRACK>
+<TRACK TrackID="17" Name="Golden Hour" Artist="Disco Halide" Genre="Funk" AverageBpm="118.00" Tonality="4B" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/golden-hour.mp3" Year="" Label="Halide" TotalTime="275"></TRACK>
+<TRACK TrackID="18" Name="Quiet Room" Artist="Nimbus Fields" Genre="Ambient" AverageBpm="92.00" Tonality="3A" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/quiet-room.mp3" Year="" Label="" TotalTime="260"></TRACK>
+<TRACK TrackID="19" Name="Drift State" Artist="Nimbus Fields" Genre="Downtempo" AverageBpm="96.00" Tonality="" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/drift-state.mp3" Year="" Label="" TotalTime="270"></TRACK>
+<TRACK TrackID="20" Name="Riot Year" Artist="The Broken Kites" Genre="Punk" AverageBpm="168.00" Tonality="" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/riot-year.mp3" Year="1996" Label="Riotline" TotalTime="150"></TRACK>
+<TRACK TrackID="21" Name="Bubblegum Riot" Artist="The Broken Kites" Genre="Pop Punk" AverageBpm="162.00" Tonality="" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/bubblegum-riot.mp3" Year="2003" Label="Riotline" TotalTime="165"></TRACK>
+<TRACK TrackID="22" Name="Mirror Trip" Artist="Solene Vane" Genre="Psychedelic Rock" AverageBpm="110.00" Tonality="5A" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/mirror-trip.mp3" Year="1972" Label="Nightshade" TotalTime="300"></TRACK>
+<TRACK TrackID="23" Name="Neon Postcard" Artist="Ceres Lang" Genre="Pop" AverageBpm="116.00" Tonality="1A" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/neon-postcard.mp3" Year="2022" Label="Popline" TotalTime="200"></TRACK>
+<TRACK TrackID="24" Name="Unlabeled Cut" Artist="Ceres Lang" Genre="" AverageBpm="0.00" Tonality="" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/unlabeled-cut.mp3" Year="" Label="" TotalTime="230"></TRACK>
+<TRACK TrackID="25" Name="Working Title" Artist="Unknown Artist" Genre="" AverageBpm="118.00" Tonality="6A" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/working-title.mp3" Year="" Label="" TotalTime="240"></TRACK>
+<TRACK TrackID="26" Name="Nightbloom" Artist="Solene Vane" Genre="House" AverageBpm="124.00" Tonality="8A" Rating="0" Comments="" Location="file://localhost/Music/DemoLibrary/nightbloom-copy.mp3" Year="2021" Label="Bloomcast" TotalTime="340"></TRACK>
+</COLLECTION>
+<PLAYLISTS>
+<NODE Type="0" Name="ROOT" Count="1">
+<NODE Name="DJ Sets" Type="0" Count="3">
+<NODE Name="Warm Up" Type="1" KeyType="0" Entries="7">
+<TRACK Key="3"/>
+<TRACK Key="4"/>
+<TRACK Key="16"/>
+<TRACK Key="17"/>
+<TRACK Key="18"/>
+<TRACK Key="22"/>
+<TRACK Key="23"/>
+</NODE>
+<NODE Name="Peak Time" Type="1" KeyType="0" Entries="9">
+<TRACK Key="1"/>
+<TRACK Key="2"/>
+<TRACK Key="5"/>
+<TRACK Key="6"/>
+<TRACK Key="7"/>
+<TRACK Key="8"/>
+<TRACK Key="9"/>
+<TRACK Key="10"/>
+<TRACK Key="11"/>
+</NODE>
+<NODE Name="Closers" Type="1" KeyType="0" Entries="4">
+<TRACK Key="12"/>
+<TRACK Key="13"/>
+<TRACK Key="20"/>
+<TRACK Key="21"/>
+</NODE>
+</NODE>
+</NODE>
+</PLAYLISTS>
+</DJ_PLAYLISTS>`;
 
   const importZone = document.getElementById('importZone');
   const importZoneInput = document.getElementById('importZoneInput');
@@ -861,6 +940,12 @@
   ['dragover'].forEach(ev=> importZone.addEventListener(ev, e=>e.preventDefault()));
   importZone.addEventListener('drop', e=>{ e.preventDefault(); if(e.dataTransfer.files[0]) handleImport(e.dataTransfer.files[0]); });
   importZoneInput.addEventListener('change', e=>{ if(e.target.files[0]) handleImport(e.target.files[0]); });
+
+  document.getElementById('loadDemoBtn').addEventListener('click', e=>{
+    e.stopPropagation();
+    applyImportedXml(DEMO_XML);
+    showToast("Loaded the demo library — made up, not your real music. Re-import your own XML any time from the button up top.");
+  });
 
   const fileInput = document.getElementById('fileInput');
   document.getElementById('reimportBtn').addEventListener('click', ()=> fileInput.click());
