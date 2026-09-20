@@ -17,6 +17,7 @@ A free, local-only tool for organizing a Rekordbox library and building new crat
 - `index.html` — landing page
 - `app.html` — the tool itself
 - `manual.html` — the guide/reference manual
+- `contact.html` — ways to get in touch
 
 ## Running locally
 

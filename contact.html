@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crate — contact</title>
+<meta name="description" content="Ways to get in touch about Crate — bugs, feature ideas, or anything else.">
+<link rel="canonical" href="https://gtirimbo.github.io/Crate/contact.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1c1a17; --panel:#242119; --panel-2:#1f1c16; --field:#19170f;
+    --line:#3a352c; --line-soft:#2c281f;
+    --text:#efe9dd; --text-dim:#a39b8a; --text-faint:#726a5b;
+    --amber:#ffb238; --amber-dim:#8a6a2f;
+    --green:#8cff9e; --red:#ff6b5c; --blue:#5ab4ff;
+    --sans:'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, monospace;
+    --radius:12px;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ background:var(--bg); color:var(--text); font-family:var(--sans); font-weight:300; line-height:1.5; }
+  h1,h2,h3,h4,h5,h6,b,strong{ font-weight:400; }
+  ::selection{ background:var(--amber); color:#1c1a17; }
+  a{ color:var(--amber); }
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--amber); outline-offset:2px; border-radius:4px; }
+  .wrap{ max-width:760px; margin:0 auto; padding:0 20px; }
+
+  nav{ display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line); padding:16px 0; flex-wrap:wrap; gap:10px; }
+  nav .navwrap{ max-width:760px; margin:0 auto; padding:0 20px; display:flex; align-items:center; justify-content:space-between; width:100%; flex-wrap:wrap; gap:12px; }
+  nav .logo{ font-size:19px; font-weight:400; letter-spacing:-0.01em; color:var(--text); text-decoration:none; display:flex; align-items:center; gap:8px; }
+  nav .logo .mark{ width:9px; height:9px; border-radius:2px; background:var(--amber); display:inline-block; }
+  nav .links{ display:flex; align-items:center; gap:16px; font-size:13.5px; flex-wrap:wrap; }
+  nav .links a{ color:var(--text-dim); text-decoration:none; }
+  nav .links a:hover{ color:var(--text); }
+  nav .navcta{ background:var(--amber); color:#1c1a17; padding:8px 16px; border-radius:8px; font-weight:400; font-size:13.5px; text-decoration:none; }
+  nav .navcta:hover{ filter:brightness(1.07); }
+
+  main{ padding:56px 0 70px; }
+  .eyebrow{ font-family:var(--mono); font-size:11.5px; letter-spacing:.04em; color:var(--amber); margin:0 0 10px; text-transform:uppercase; }
+  h1{ font-size:34px; margin:0 0 14px; letter-spacing:-0.01em; }
+  main > .wrap > p.lede{ color:var(--text-dim); font-size:15.5px; max-width:520px; margin:0 0 40px; line-height:1.7; }
+
+  .contact-list{ display:flex; flex-direction:column; gap:14px; margin-bottom:40px; }
+  .contact-card{
+    display:flex; align-items:flex-start; gap:16px; background:var(--panel); border:1px solid var(--line);
+    border-radius:var(--radius); padding:20px 22px;
+  }
+  .contact-card .icon{ font-size:20px; line-height:1; margin-top:2px; flex-shrink:0; }
+  .contact-card h2{ font-size:15.5px; margin:0 0 4px; font-weight:400; }
+  .contact-card p{ font-size:13.5px; color:var(--text-dim); margin:0 0 8px; line-height:1.6; max-width:440px; }
+  .contact-card a.contact-value{ font-family:var(--mono); font-size:13.5px; color:var(--amber); text-decoration:none; word-break:break-word; }
+  .contact-card a.contact-value:hover{ text-decoration:underline; }
+  .placeholder-flag{
+    display:inline-block; margin-left:8px; font-family:var(--mono); font-size:10px; color:var(--red);
+    border:1px dashed var(--red); border-radius:6px; padding:2px 7px; vertical-align:middle;
+  }
+
+  .note{
+    background:var(--panel-2); border:1px solid var(--line); border-radius:var(--radius);
+    padding:18px 20px; font-size:13.5px; color:var(--text-dim); line-height:1.65;
+  }
+
+  footer{ padding:36px 0 60px; border-top:1px solid var(--line); }
+  footer .foot-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; font-size:13px; color:var(--text-faint); }
+  footer .foot-links a{ color:var(--text-dim); text-decoration:none; margin-left:16px; }
+  footer .disclaimer{ margin-top:18px; font-size:12px; color:var(--text-faint); max-width:640px; line-height:1.6; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="navwrap">
+    <a class="logo" href="index.html"><span class="mark"></span>Crate</a>
+    <div class="links">
+      <a href="index.html">Home</a>
+      <a href="manual.html">Guide</a>
+      <a href="https://github.com/gtirimbo/Crate" target="_blank" rel="noopener">GitHub</a>
+      <a class="navcta" href="app.html">Open the app</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <div class="wrap">
+    <p class="eyebrow">Contact</p>
+    <h1>Get in touch</h1>
+    <p class="lede">Crate is built and maintained by one person, in their free time. Bug reports and feature ideas are genuinely welcome — here's where to send them.</p>
+
+    <div class="contact-list">
+      <div class="contact-card">
+        <span class="icon">✉️</span>
+        <div>
+          <h2>Email<span class="placeholder-flag">placeholder</span></h2>
+          <p>For anything that doesn't fit neatly into a GitHub issue.</p>
+          <!-- EDIT ME: replace with a real address before publishing -->
+          <a class="contact-value" href="mailto:you@example.com">you@example.com</a>
+        </div>
+      </div>
+
+      <div class="contact-card">
+        <span class="icon">🐛</span>
+        <div>
+          <h2>Bugs &amp; feature requests</h2>
+          <p>The fastest way to report something broken or suggest something new.</p>
+          <a class="contact-value" href="https://github.com/gtirimbo/Crate/issues" target="_blank" rel="noopener">github.com/gtirimbo/Crate/issues</a>
+        </div>
+      </div>
+
+      <div class="contact-card">
+        <span class="icon">💬</span>
+        <div>
+          <h2>Social<span class="placeholder-flag">placeholder</span></h2>
+          <p>Not really active anywhere yet — add a handle here if that changes.</p>
+          <!-- EDIT ME: replace with a real profile link, or remove this card, before publishing -->
+          <a class="contact-value" href="#">@yourhandle</a>
+        </div>
+      </div>
+
+      <div class="contact-card">
+        <span class="icon">☕</span>
+        <div>
+          <h2>Support the project</h2>
+          <p>Optional, no pressure — Crate is free either way.</p>
+          <a class="contact-value" href="https://ko-fi.com/cratedj" target="_blank" rel="noopener">ko-fi.com/cratedj</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="note">Response times vary — this is a free-time project, not a support desk. For anything urgent about your library or a gig, the <a href="manual.html">guide</a> and its troubleshooting section are usually faster than waiting on a reply.</div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-row">
+      <span>Crate — a free tool for DJs.</span>
+      <div class="foot-links">
+        <a href="app.html">App</a>
+        <a href="manual.html">Guide</a>
+        <a href="contact.html">Contact</a>
+        <a href="https://github.com/gtirimbo/Crate" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://ko-fi.com/cratedj" target="_blank" rel="noopener">Support</a>
+      </div>
+    </div>
+    <p class="disclaimer">Crate is an independent, unofficial tool and is not affiliated with, endorsed by, or connected to Pioneer DJ, AlphaTheta, or rekordbox in any way. Rekordbox is a trademark of its respective owner. Always back up your Rekordbox library before importing any file generated by a third-party tool.</p>
+  </div>
+</footer>
+
+</body>
+</html>
