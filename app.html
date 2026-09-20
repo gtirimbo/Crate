@@ -154,6 +154,12 @@
   .chiprow{ display:flex; flex-wrap:wrap; gap:6px; }
   .genrechip{ font-size:11.5px; padding:5px 10px; border-radius:14px; border:1px solid var(--line); background:var(--field); color:var(--text-dim); cursor:pointer; }
   .genrechip.on{ background:var(--panel-2); border-color:var(--green); color:var(--green); }
+  .genrechip.ingroup{ box-shadow:0 0 0 2px var(--blue) inset; }
+  .grouprow{ display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-radius:6px; border-bottom:1px solid var(--line-soft); font-size:12.5px; cursor:pointer; }
+  .grouprow .mono{ color:var(--text-faint); }
+  .grouprow:hover{ background:var(--panel-2); }
+  .grouprow.viewing{ background:var(--panel-2); color:var(--blue); }
+  .grouprow.viewing .mono{ color:var(--blue); }
   .healthchip{ font-size:11.5px; padding:6px 11px; border-radius:14px; border:1px solid var(--line); background:var(--field); color:var(--text-dim); cursor:pointer; }
   .healthchip b{ color:var(--amber); font-family:var(--mono); font-weight:400; margin-right:4px; }
   .healthchip.clean{ color:var(--green); border-color:var(--line); cursor:default; }
@@ -231,8 +237,10 @@
     cursor:pointer; display:flex; align-items:center; gap:7px; white-space:nowrap;
   }
   .dropbtn:hover{ border-color:var(--text-faint); color:var(--text); }
+  .dropbtn:focus-visible{ outline:2px solid var(--amber); outline-offset:1px; }
   .dropdown.open .dropbtn{ border-color:var(--amber); color:var(--amber); }
-  .dropbtn .car{ font-size:9px; color:var(--text-faint); }
+  .dropbtn .car{ font-size:9px; color:var(--text-faint); display:inline-block; transition:transform .15s ease; }
+  .dropdown.open .dropbtn .car{ transform:rotate(180deg); }
   .droppanel{
     display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:20;
     min-width:210px; max-width:280px; max-height:260px; overflow-y:auto;
@@ -413,6 +421,7 @@
                   <button class="btn small ghost" id="autoGroupBtn">Auto-suggest groups</button>
                 </div>
                 <div id="groupList" style="margin-bottom:12px;"></div>
+                <div id="groupViewHint" class="note" style="display:none;margin:0 0 8px;"></div>
                 <label style="display:block;font-family:var(--mono);font-size:11px;color:var(--text-faint);margin-bottom:6px;">New group</label>
                 <input type="text" id="newGroupName" placeholder="e.g. House family" style="width:100%;margin-bottom:8px;">
                 <div class="chiprow" id="groupGenrePicker" style="margin-bottom:8px;"></div>
@@ -1310,8 +1319,10 @@
     applyAllBtn.className = 'btn small primary';
     applyAllBtn.textContent = 'Apply all';
     applyAllBtn.addEventListener('click', ()=>{
+      const n = suggestions.length;
       suggestions.forEach(s=> applyGenreMerge(s));
       saveGenreMapChanges();
+      showToast('Merged ' + n + ' genre spelling' + (n===1?'':'s') + '.');
     });
     header.appendChild(applyAllBtn);
     panel.appendChild(header);
@@ -1327,6 +1338,7 @@
       btn.addEventListener('click', ()=>{
         applyGenreMerge(s);
         saveGenreMapChanges();
+        showToast('Merged into "' + s.canonical + '".');
       });
       row.appendChild(btn);
       panel.appendChild(row);
@@ -1736,6 +1748,7 @@
 
   // ---------------- genre groups ----------------
   let groupDraftGenres = new Set();
+  let viewedGroupId = null; // which saved group's genres to highlight in the picker below
   document.getElementById('manageGroupsBtn').addEventListener('click', ()=>{
     const ed = document.getElementById('groupEditor');
     const showing = ed.style.display !== 'none';
@@ -1745,23 +1758,36 @@
 
   function renderGroupList(){
     const el = document.getElementById('groupList');
-    if(!genreGroups.length){ el.innerHTML = '<div class="crate-empty">no groups yet</div>'; return; }
+    if(!genreGroups.length){
+      el.innerHTML = '<div class="crate-empty">no groups yet</div>';
+      viewedGroupId = null;
+      document.getElementById('groupViewHint').style.display = 'none';
+      return;
+    }
+    if(viewedGroupId && !genreGroups.some(g=>g.id===viewedGroupId)) viewedGroupId = null;
     el.innerHTML = '';
     genreGroups.forEach(g=>{
       const row = document.createElement('div');
-      row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line-soft);font-size:12.5px;';
-      row.innerHTML = `<span>${escapeHtml(g.name)} <span class="mono" style="color:var(--text-faint);">— ${g.genres.length} genres</span></span>`;
+      row.className = 'grouprow' + (viewedGroupId===g.id ? ' viewing' : '');
+      row.title = 'Click to highlight this group\'s genres below';
+      row.innerHTML = `<span>${escapeHtml(g.name)} <span class="mono">— ${g.genres.length} genres</span></span>`;
+      row.addEventListener('click', ()=>{
+        viewedGroupId = (viewedGroupId===g.id) ? null : g.id;
+        renderGroupList(); renderGroupGenrePicker();
+      });
       const del = document.createElement('button');
       del.className = 'btn small danger'; del.textContent = 'Delete';
-      del.addEventListener('click', ()=>{
+      del.addEventListener('click', e=>{
+        e.stopPropagation();
         const snapshot = genreGroups.slice();
         genreGroups = genreGroups.filter(x=>x.id!==g.id);
         saveJSON(LS_GENREGROUPS, genreGroups);
-        renderGroupList(); populateGenreChips();
+        if(viewedGroupId===g.id) viewedGroupId = null;
+        renderGroupList(); renderGroupGenrePicker(); populateGenreChips();
         setUndo('Deleted genre group "'+g.name+'"', ()=>{
           genreGroups = snapshot;
           saveJSON(LS_GENREGROUPS, genreGroups);
-          renderGroupList(); populateGenreChips();
+          renderGroupList(); renderGroupGenrePicker(); populateGenreChips();
         });
       });
       row.appendChild(del);
@@ -1771,10 +1797,20 @@
 
   function renderGroupGenrePicker(){
     const el = document.getElementById('groupGenrePicker');
+    const hint = document.getElementById('groupViewHint');
+    const viewedGroup = viewedGroupId ? genreGroups.find(g=>g.id===viewedGroupId) : null;
+    if(viewedGroup){
+      hint.style.display = 'block';
+      hint.innerHTML = `<span style="color:var(--blue);">◆</span> Highlighting genres in <b style="color:var(--blue);">${escapeHtml(viewedGroup.name)}</b> below — click it again above to stop.`;
+    } else {
+      hint.style.display = 'none';
+    }
     el.innerHTML = '';
     allDistinctGenres().forEach(g=>{
       const chip = document.createElement('div');
-      chip.className = 'genrechip' + (groupDraftGenres.has(g) ? ' on' : '');
+      chip.className = 'genrechip'
+        + (groupDraftGenres.has(g) ? ' on' : '')
+        + (viewedGroup && viewedGroup.genres.includes(g) ? ' ingroup' : '');
       chip.textContent = g;
       chip.addEventListener('click', ()=>{
         if(groupDraftGenres.has(g)) groupDraftGenres.delete(g); else groupDraftGenres.add(g);
@@ -1794,6 +1830,9 @@
     nameInput.value = '';
     groupDraftGenres = new Set();
     renderGroupList(); renderGroupGenrePicker(); populateGenreChips();
+  });
+  document.getElementById('newGroupName').addEventListener('keydown', e=>{
+    if(e.key==='Enter'){ e.preventDefault(); document.getElementById('saveGroupBtn').click(); }
   });
 
   // Keyword families for auto-suggesting groups. Order matters when a genre
@@ -2813,9 +2852,11 @@ ${playlistNodes}
     applyAllBtn.className = 'btn small primary';
     applyAllBtn.textContent = 'Apply all';
     applyAllBtn.addEventListener('click', ()=>{
+      const n = suggestions.reduce((s,x)=>s+x.missingIds.length,0);
       suggestions.forEach(applyGenreFill);
       persistAllTrackData();
       afterTrackFieldEdit();
+      showToast('Filled genre on ' + n + ' track' + (n===1?'':'s') + '.');
     });
     header.appendChild(applyAllBtn);
     el.appendChild(header);
@@ -2830,6 +2871,7 @@ ${playlistNodes}
         applyGenreFill(s);
         persistAllTrackData();
         afterTrackFieldEdit();
+        showToast('Set "' + s.artist + '" tracks to ' + s.genre + '.');
       });
       row.appendChild(btn);
       el.appendChild(row);
@@ -3017,7 +3059,12 @@ ${playlistNodes}
   }
 
   function closeAllDropdowns(except){
-    document.querySelectorAll('.dropdown.open').forEach(d=>{ if(d!==except) d.classList.remove('open'); });
+    document.querySelectorAll('.dropdown.open').forEach(d=>{
+      if(d===except) return;
+      d.classList.remove('open');
+      const btn = d.querySelector('.dropbtn');
+      if(btn) btn.setAttribute('aria-expanded','false');
+    });
   }
   let dropdownsReady = false;
   function setupDropdowns(){
@@ -3025,15 +3072,18 @@ ${playlistNodes}
     dropdownsReady = true;
     document.querySelectorAll('.dropdown').forEach(wrap=>{
       const btn = wrap.querySelector('.dropbtn');
+      btn.setAttribute('aria-haspopup','true');
+      btn.setAttribute('aria-expanded','false');
       btn.addEventListener('click', e=>{
         e.stopPropagation();
         const willOpen = !wrap.classList.contains('open');
         closeAllDropdowns();
-        if(willOpen) wrap.classList.add('open');
+        if(willOpen){ wrap.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
       });
       wrap.querySelector('.droppanel').addEventListener('click', e=> e.stopPropagation());
     });
     document.addEventListener('click', ()=> closeAllDropdowns());
+    document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeAllDropdowns(); });
   }
 
   function updateGraphCrateLabel(){
