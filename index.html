@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crate — organize your Rekordbox library, build what plays next</title>
+<meta name="description" content="A free, local-only tool that reads your Rekordbox XML export, helps you organize and clean up your library, and builds new crates from it.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1c1a17; --panel:#242119; --panel-2:#1f1c16; --field:#19170f;
+    --line:#3a352c; --line-soft:#2c281f;
+    --text:#efe9dd; --text-dim:#a39b8a; --text-faint:#726a5b;
+    --amber:#ffb238; --green:#8cff9e; --red:#ff6b5c;
+    --sans:'Space Grotesk', system-ui, sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{ margin:0; padding:0; }
+  body{ background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.5; }
+  ::selection{ background:var(--amber); color:#1c1a17; }
+  a{ color:var(--amber); }
+  .wrap{ max-width:980px; margin:0 auto; padding:0 20px; }
+
+  nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:20px 0; border-bottom:1px solid var(--line);
+  }
+  nav .logo{ font-size:19px; font-weight:600; letter-spacing:-0.01em; color:var(--text); text-decoration:none; }
+  nav .links{ display:flex; align-items:center; gap:22px; font-size:14px; }
+  nav .links a{ color:var(--text-dim); text-decoration:none; }
+  nav .links a:hover{ color:var(--text); }
+  nav .kofi{
+    background:var(--amber); color:#1c1a17; padding:8px 16px; border-radius:20px;
+    font-weight:600; font-size:13px;
+  }
+
+  header.hero{ padding:70px 0 50px; }
+  header.hero h1{ font-size:44px; line-height:1.1; margin:0 0 16px; letter-spacing:-0.02em; max-width:640px; }
+  header.hero p.lede{ font-size:17px; color:var(--text-dim); max-width:520px; margin:0 0 30px; }
+  .cta-row{ display:flex; gap:12px; flex-wrap:wrap; }
+  .btn{
+    display:inline-block; font-family:var(--sans); font-weight:600; font-size:14.5px;
+    padding:13px 24px; border-radius:8px; text-decoration:none; border:1px solid var(--line);
+  }
+  .btn.primary{ background:var(--amber); color:#1c1a17; border-color:var(--amber); }
+  .btn.ghost{ color:var(--text); }
+
+  .stage-mark{
+    margin-top:50px; height:120px; border-radius:10px;
+    background:
+      repeating-linear-gradient(90deg, var(--panel) 0 2px, transparent 2px 22px),
+      linear-gradient(180deg, var(--panel-2), var(--panel));
+    border:1px solid var(--line);
+    display:flex; align-items:center; padding:0 24px; gap:18px; overflow:hidden;
+  }
+  .stage-mark .dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .stage-mark .bar{ height:34px; flex:1; border-radius:3px; background:var(--line); position:relative; overflow:hidden; }
+  .stage-mark .bar i{ position:absolute; inset:0; background:linear-gradient(90deg, var(--amber), var(--green)); opacity:.5; }
+
+  section{ padding:50px 0; border-top:1px solid var(--line); }
+  section h2{ font-size:22px; margin:0 0 8px; }
+  section p.section-sub{ color:var(--text-dim); font-size:14.5px; margin:0 0 30px; max-width:560px; }
+
+  .why{
+    background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:24px;
+    font-size:15px; color:var(--text-dim); line-height:1.7;
+  }
+  .why b{ color:var(--text); }
+  .edit-flag{
+    display:inline-block; margin-top:14px; font-family:var(--mono); font-size:11px;
+    color:var(--red); border:1px dashed var(--red); border-radius:6px; padding:6px 10px;
+  }
+
+  .steps{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  @media (max-width:760px){ .steps{ grid-template-columns:1fr; } }
+  .step{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px; }
+  .step .num{ font-family:var(--mono); color:var(--amber); font-size:13px; margin-bottom:10px; }
+  .step h3{ font-size:15.5px; margin:0 0 8px; }
+  .step p{ font-size:13.5px; color:var(--text-dim); margin:0; }
+  .step code{ background:var(--field); border:1px solid var(--line); border-radius:4px; padding:1px 5px; font-family:var(--mono); font-size:12px; color:var(--text); }
+
+  .features{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+  @media (max-width:760px){ .features{ grid-template-columns:1fr; } }
+  .feature{ padding:18px 0; border-bottom:1px solid var(--line-soft); }
+  .feature h3{ font-size:15px; margin:0 0 6px; display:flex; align-items:center; gap:8px; }
+  .feature h3 .tag{ font-family:var(--mono); font-size:10px; color:var(--green); border:1px solid var(--green); border-radius:10px; padding:1px 7px; }
+  .feature p{ font-size:13.5px; color:var(--text-dim); margin:0; }
+
+  .privacy-band{
+    background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:22px 24px;
+    font-size:14px; color:var(--text-dim); display:flex; gap:16px; align-items:flex-start;
+  }
+  .privacy-band .icon{ font-size:22px; }
+
+  .changelog-item{ display:flex; gap:14px; padding:12px 0; border-bottom:1px solid var(--line-soft); font-size:13.5px; }
+  .changelog-item .ver{ font-family:var(--mono); color:var(--amber); white-space:nowrap; }
+  .changelog-item .desc{ color:var(--text-dim); }
+
+  footer{ padding:36px 0 60px; border-top:1px solid var(--line); }
+  footer .foot-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; font-size:13px; color:var(--text-faint); }
+  footer .foot-links a{ color:var(--text-dim); text-decoration:none; margin-left:16px; }
+  footer .disclaimer{ margin-top:18px; font-size:12px; color:var(--text-faint); max-width:640px; line-height:1.6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav>
+    <a class="logo" href="index.html">Crate</a>
+    <div class="links">
+      <a href="app.html">Open the app</a>
+      <a href="manual.html">Guide</a>
+      <a href="https://github.com/YOUR_USERNAME/crate" target="_blank">GitHub</a>
+      <a class="kofi" href="https://ko-fi.com/YOUR_KOFI_USERNAME" target="_blank">☕ Support</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <h1>Organize your Rekordbox library. Build what plays next.</h1>
+    <p class="lede">Crate reads the library you already have in Rekordbox, helps you clean it up and understand it, and builds new crates from it — filtered, ordered, and ready to bring back in. Runs entirely in your browser. Nothing uploads anywhere.</p>
+    <div class="cta-row">
+      <a class="btn primary" href="app.html">Open Crate — it's free</a>
+      <a class="btn ghost" href="manual.html">Read the quickstart</a>
+    </div>
+    <div class="stage-mark" aria-hidden="true">
+      <div class="dot" style="background:var(--amber);"></div>
+      <div class="bar"><i style="width:35%"></i></div>
+      <div class="dot" style="background:var(--green);"></div>
+      <div class="bar"><i style="width:70%"></i></div>
+      <div class="dot" style="background:var(--amber);"></div>
+      <div class="bar"><i style="width:50%"></i></div>
+    </div>
+  </header>
+
+  <section id="why">
+    <h2>Why this exists</h2>
+    <div class="why">
+      <p><!-- EDIT ME: replace this paragraph with your own words before publishing —
+           a couple of honest sentences on why you built this beats anything I can write for you. --></p>
+      <p><b>Placeholder:</b> I DJ, and I got tired of digging through the same messy Rekordbox library every time I wanted to put together a new set. Crate is the tool I wanted for myself first — something that reads what's already in Rekordbox, helps me actually see what's in there, and builds new playlists out of it without a subscription or an account. I'm sharing it in case it's useful to you too.</p>
+    </div>
+    <span class="edit-flag">⚠ placeholder text — rewrite before you publish</span>
+  </section>
+
+  <section id="quickstart">
+    <h2>Quickstart</h2>
+    <p class="section-sub">Three steps. No install, no account.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="num">01</div>
+        <h3>Export from Rekordbox</h3>
+        <p>In Rekordbox: <code>File → Export Collection in xml format</code>. Save it anywhere you'll remember.</p>
+      </div>
+      <div class="step">
+        <div class="num">02</div>
+        <h3>Drop it into Crate</h3>
+        <p>Open the app, drag the XML file in. Your library loads instantly — nothing leaves your browser.</p>
+      </div>
+      <div class="step">
+        <div class="num">03</div>
+        <h3>Build and export</h3>
+        <p>Filter, order, save a crate. Export as <code>.m3u8</code> or a merged XML, and bring it back into Rekordbox.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <h2>What's in it</h2>
+    <p class="section-sub">Built up feature by feature from actually using it to prep sets.</p>
+    <div class="features">
+      <div class="feature">
+        <h3>Library, organized</h3>
+        <p>Sortable, searchable, with your own notes and tags layered on top of what Rekordbox gives you.</p>
+      </div>
+      <div class="feature">
+        <h3>Smart crate builder</h3>
+        <p>Filter by BPM, harmonic key, genre, or your own genre groups. Order by a smooth harmonic mix or a target energy shape.</p>
+      </div>
+      <div class="feature">
+        <h3 >Genre cleanup <span class="tag">auto</span></h3>
+        <p>Finds genres that are probably the same thing spelled differently, and suggests merging them.</p>
+      </div>
+      <div class="feature">
+        <h3>Gigs & set sheets</h3>
+        <p>Block out a set from multiple crates, track total runtime, export a clean printable sheet.</p>
+      </div>
+      <div class="feature">
+        <h3>Recipes</h3>
+        <p>Save a filter combo, not just a frozen list — re-run it later as your library grows.</p>
+      </div>
+      <div class="feature">
+        <h3 >Traktor export <span class="tag" style="color:var(--red);border-color:var(--red);">experimental</span></h3>
+        <p>A best-effort NML export for Traktor users. Verify it on a small crate before trusting it fully.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="privacy">
+    <div class="privacy-band">
+      <div class="icon">🔒</div>
+      <div>
+        <b style="color:var(--text);">Your library never leaves your computer.</b><br>
+        Crate runs entirely in your browser. There's no server, no account, no upload. Your data is stored locally in your browser and exportable any time as a plain file you control.
+      </div>
+    </div>
+  </section>
+
+  <section id="changelog">
+    <h2>Changelog</h2>
+    <div class="changelog-item">
+      <span class="ver">v1.0</span>
+      <span class="desc">First public release — library organizing, the crate builder, genre groups and cleanup, gigs and set sheets, recipes, CSV/M3U8/XML export, experimental Traktor export.</span>
+    </div>
+  </section>
+
+  <footer>
+    <div class="foot-row">
+      <span>Crate — a free tool for DJs.</span>
+      <div class="foot-links">
+        <a href="app.html">App</a>
+        <a href="manual.html">Guide</a>
+        <a href="https://github.com/YOUR_USERNAME/crate" target="_blank">GitHub</a>
+        <a href="https://ko-fi.com/YOUR_KOFI_USERNAME" target="_blank">Support</a>
+      </div>
+    </div>
+    <p class="disclaimer">Crate is an independent, unofficial tool and is not affiliated with, endorsed by, or connected to Pioneer DJ, AlphaTheta, or rekordbox in any way. Rekordbox is a trademark of its respective owner. Always back up your Rekordbox library before importing any file generated by a third-party tool.</p>
+  </footer>
+
+</div>
+</body>
+</html>

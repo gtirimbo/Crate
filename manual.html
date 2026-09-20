@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crate — guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1c1a17; --panel:#242119; --panel-2:#1f1c16; --field:#19170f;
+    --line:#3a352c; --line-soft:#2c281f;
+    --text:#efe9dd; --text-dim:#a39b8a; --text-faint:#726a5b;
+    --amber:#ffb238; --green:#8cff9e; --red:#ff6b5c;
+    --sans:'Space Grotesk', system-ui, sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{ margin:0; padding:0; }
+  body{ background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.6; }
+  a{ color:var(--amber); }
+  code{ background:var(--field); border:1px solid var(--line); border-radius:4px; padding:1px 6px; font-family:var(--mono); font-size:12.5px; color:var(--text); }
+
+  nav{
+    display:flex; align-items:center; justify-content:space-between; max-width:980px; margin:0 auto;
+    padding:20px; border-bottom:1px solid var(--line);
+  }
+  nav .logo{ font-size:19px; font-weight:600; color:var(--text); text-decoration:none; }
+  nav .links{ display:flex; gap:20px; font-size:14px; }
+  nav .links a{ color:var(--text-dim); text-decoration:none; }
+  nav .links a:hover{ color:var(--text); }
+
+  .layout{ max-width:980px; margin:0 auto; padding:30px 20px 80px; display:grid; grid-template-columns:210px 1fr; gap:40px; }
+  @media (max-width:820px){ .layout{ grid-template-columns:1fr; } .toc{ position:static !important; } }
+
+  .toc{ position:sticky; top:20px; align-self:start; font-size:13px; }
+  .toc h4{ font-family:var(--mono); font-size:11px; color:var(--text-faint); margin:0 0 10px; font-weight:500; }
+  .toc a{ display:block; color:var(--text-dim); text-decoration:none; padding:4px 0; }
+  .toc a:hover{ color:var(--amber); }
+  .toc .sub{ padding-left:12px; font-size:12.5px; }
+
+  main h1{ font-size:30px; margin:0 0 8px; }
+  main > p.lede{ color:var(--text-dim); font-size:15px; margin:0 0 36px; }
+
+  .section{ margin-bottom:44px; padding-top:10px; }
+  .section h2{ font-size:21px; margin:0 0 6px; border-bottom:1px solid var(--line); padding-bottom:10px; }
+  .section h3{ font-size:15.5px; margin:26px 0 8px; color:var(--text); }
+  .section p{ font-size:14px; color:var(--text-dim); margin:0 0 12px; }
+  .section ul{ font-size:14px; color:var(--text-dim); padding-left:20px; margin:0 0 14px; }
+  .section li{ margin-bottom:6px; }
+
+  .callout{
+    background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px 16px;
+    font-size:13.5px; color:var(--text-dim); margin:14px 0;
+  }
+  .callout.trouble{ border-color:var(--red); }
+  .callout.trouble b{ color:var(--red); }
+  .callout b{ color:var(--text); }
+
+  .steps-inline{ counter-reset:step; list-style:none; padding:0; margin:0 0 16px; }
+  .steps-inline li{ counter-increment:step; position:relative; padding-left:30px; margin-bottom:10px; font-size:14px; color:var(--text-dim); }
+  .steps-inline li::before{ content:counter(step); position:absolute; left:0; top:0; width:20px; height:20px; border-radius:50%; background:var(--panel); border:1px solid var(--amber); color:var(--amber); font-family:var(--mono); font-size:11px; display:flex; align-items:center; justify-content:center; }
+</style>
+</head>
+<body>
+
+  <nav>
+    <a class="logo" href="index.html">Crate</a>
+    <div class="links">
+      <a href="index.html">Home</a>
+      <a href="app.html">Open the app</a>
+    </div>
+  </nav>
+
+  <div class="layout">
+    <div class="toc">
+      <h4>On this page</h4>
+      <a href="#quickstart">Quickstart</a>
+      <a href="#library">Library</a>
+      <a class="sub" href="#lib-import">Importing</a>
+      <a class="sub" href="#lib-health">Health & cleanup</a>
+      <a class="sub" href="#lib-bulk">Bulk actions</a>
+      <a class="sub" href="#lib-notes">Notes & transitions</a>
+      <a href="#builder">Builder</a>
+      <a class="sub" href="#build-sources">Sources</a>
+      <a class="sub" href="#build-filters">Filters & genre groups</a>
+      <a class="sub" href="#build-order">Ordering</a>
+      <a class="sub" href="#build-recipes">Recipes</a>
+      <a href="#gigs">Gigs</a>
+      <a href="#export">Exporting</a>
+      <a href="#troubleshoot">Troubleshooting</a>
+    </div>
+
+    <main>
+      <h1>Guide</h1>
+      <p class="lede">Everything Crate does, organized the way you'll actually move through the app — Library, then Builder, then Gigs.</p>
+
+      <div class="section" id="quickstart">
+        <h2>Quickstart</h2>
+        <ol class="steps-inline">
+          <li>In Rekordbox: <code>File → Export Collection in xml format</code>. Save it anywhere.</li>
+          <li>Open Crate, drag that file onto the import zone (or tap to choose it).</li>
+          <li>Browse the Library, or jump straight to <b>Build a new crate</b>.</li>
+          <li>Filter, order, and save. Export as <code>.m3u8</code> for a quick drag into Rekordbox, or as a merged XML to bring in everything at once.</li>
+        </ol>
+        <div class="callout"><b>Nothing leaves your browser.</b> Crate has no server and no account — your library is parsed and stored locally on your device only.</div>
+      </div>
+
+      <div class="section" id="library">
+        <h2>Library</h2>
+
+        <h3 id="lib-import">Importing</h3>
+        <p>Only a Rekordbox XML export works as input — not the app's database file directly. Re-import any time your library changes in Rekordbox; Crate will show a banner summarizing what changed since last time (new tracks, removed tracks, crates that changed).</p>
+        <p>The <b>Crates</b> sidebar shows two groups after import: <b>from rekordbox</b> (your actual Rekordbox playlists, including folders) and <b>from folders</b> (grouped by the folder each file lives in on disk — useful if your Rekordbox playlist tree is empty or doesn't match how you actually organize things).</p>
+
+        <h3 id="lib-health">Health & cleanup</h3>
+        <p>A row of chips at the top of the Library flags tracks missing genre, key, or BPM, tracks not in any crate, and likely duplicates. Click a chip to scope the table to just those tracks.</p>
+        <p>Below that, Crate scans your genre tags for likely spelling variants (<code>"Deep House"</code> vs <code>"deep house"</code>) and suggests merging them — click <b>Merge</b> on one, or <b>Apply all</b>.</p>
+
+        <h3 id="lib-bulk">Bulk actions</h3>
+        <p>Select multiple rows with the checkboxes, then use the bar that appears to add a tag to all of them at once, or add them all to an existing (or brand new) crate.</p>
+
+        <h3 id="lib-notes">Notes & transitions</h3>
+        <p>Click any track row to open its detail editor: your own notes, tags, and — separately — <b>"Mixes well into"</b>, where you can link a track to another one you've actually tested live. The Builder's smart harmonic order prefers a known transition over generic key/BPM math whenever one exists.</p>
+      </div>
+
+      <div class="section" id="builder">
+        <h2>Builder</h2>
+        <p>This is where a new crate gets made. Everything below is live — the result list and count update as you change anything.</p>
+
+        <h3 id="build-sources">Sources</h3>
+        <p>Pick <b>All library</b>, one or more specific playlists, an entire Rekordbox folder at once, or a crate you've already built. Selections combine (union), so you can pull from several sources into one new crate.</p>
+
+        <h3 id="build-filters">Filters & genre groups</h3>
+        <p>BPM range, harmonic key (with Camelot-compatible matching), a text search across titles/artists/notes/tags, and genre. <b>Genre groups</b> let you define your own macro categories (e.g. "House family") spanning several raw genre tags — click <b>Group genres…</b> to build one manually, or <b>Auto-suggest groups</b> to have Crate propose some from common keyword families.</p>
+        <div class="callout">Harmonic key matching assumes Rekordbox is displaying keys in Camelot notation. Check <code>Preferences → Advanced → Browse</code> in Rekordbox if key filtering looks off.</div>
+
+        <h3 id="build-order">Ordering</h3>
+        <ul>
+          <li><b>BPM low→high / high→low</b> — exactly what it says.</li>
+          <li><b>Group by key</b> — sorted by Camelot wheel position.</li>
+          <li><b>Smooth harmonic mix</b> — greedy nearest-neighbor by key distance and BPM, boosted by any transitions you've noted.</li>
+          <li><b>Target shape</b> — four presets (slow build, build-then-peak, peak early, peak in the middle) that reorder tracks to approximate that energy curve.</li>
+        </ul>
+        <p>Once ordered, a small chart shows the BPM arc across the set with a plain-language read of its shape (steady build, choppy, flat, etc). Duplicate songs (same title + artist) are automatically dropped from the result.</p>
+
+        <h3 id="build-recipes">Recipes</h3>
+        <p><b>Save as new crate</b> freezes the current result as a fixed list. <b>Save as recipe</b> instead saves the filter combination itself — reload it later from the sidebar and it re-runs live against your current library, picking up anything new you've added since.</p>
+      </div>
+
+      <div class="section" id="gigs">
+        <h2>Gigs</h2>
+        <p>A gig bundles several crates into ordered blocks — warm-up, peak, closer, or whatever labels make sense to you. Reorder blocks with the arrows, add venue/date/notes, and see total runtime update automatically.</p>
+        <p><b>Export set sheet</b> downloads a clean, printable page for the whole gig (or for a single crate, from the "Sheet" button in the sidebar) — open it in a browser and print, or Print → Save as PDF.</p>
+      </div>
+
+      <div class="section" id="export">
+        <h2>Exporting back to Rekordbox</h2>
+        <ul>
+          <li><b>.m3u8</b> — fastest for one crate at a time. Drag it into Rekordbox's Playlists panel, or right-click → Import Playlist. Needs the same file paths Crate read at import — if anything's on an external drive, that drive needs to be plugged in.</li>
+          <li><b>Merged XML</b> — brings in everything at once, as a new "Crate" folder inside your library. Needs the original XML in memory that session (re-import if you've reloaded the page since).</li>
+          <li><b>CSV</b> — for spreadsheets, sharing with a promoter, or anything outside Rekordbox entirely.</li>
+          <li><b>Traktor NML</b> — <span style="color:var(--red);">experimental</span>, unverified against a real Traktor library. Test on a small crate first.</li>
+        </ul>
+        <div class="callout trouble"><b>Back up your Rekordbox library</b> before importing any file Crate generates, the same way you'd back up before any third-party tool touches your setup.</div>
+      </div>
+
+      <div class="section" id="troubleshoot">
+        <h2>Troubleshooting</h2>
+        <div class="callout trouble"><b>"New gig" / naming dialogs don't seem to do anything</b><br>Older versions used the browser's native prompt, which can get silently blocked. Current versions use an in-page dialog — reload the app if you're on a cached older copy.</div>
+        <div class="callout trouble"><b>Playlists aren't showing up</b><br>If Rekordbox's own playlist tree exported empty, Crate automatically falls back to grouping by folder — check the "from folders" section in the sidebar.</div>
+        <div class="callout trouble"><b>Key filtering doesn't match anything</b><br>Check Rekordbox is set to show keys in Camelot notation, or that your keys aren't in an unusual format the standard-notation converter doesn't recognize.</div>
+        <div class="callout trouble"><b>Export XML button is disabled</b><br>It needs your original XML file in memory for that session — re-import it once, then export.</div>
+        <div class="callout trouble"><b>.m3u8 won't import, or tracks show as missing</b><br>Usually a file path issue — an external drive isn't mounted, or files moved since the export. Re-export from Rekordbox with the drive connected.</div>
+      </div>
+
+    </main>
+  </div>
+</body>
+</html>
