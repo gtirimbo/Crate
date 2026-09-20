@@ -322,6 +322,7 @@
       <button class="pagetab" data-page="dashboard">Dashboard</button>
       <button class="pagetab" data-page="dataclean">Data Cleaning</button>
       <button class="pagetab" data-page="graph">Graph</button>
+      <button class="pagetab" data-page="aiassist">AI Assist</button>
     </div>
     <div class="grid">
       <div class="rail">
@@ -601,6 +602,43 @@
             <div class="floattip" id="graphTooltip"></div>
           </div>
           <p class="graphnote" id="graphNote"></p>
+        </div>
+
+        <div class="card" id="pageAiAssist" style="display:none;">
+          <h2>AI Assist</h2>
+          <p class="note" style="margin:-8px 0 16px;">Hand the tracks missing genre, key or BPM to an AI assistant of your choice, then bring its answer back here to review and apply — nothing goes anywhere without a file changing hands by your own hand.</p>
+
+          <div class="dashsection" style="margin-top:0;">
+            <h3>How this works</h3>
+            <div class="cleanrow"><span class="desc"><b>1.</b> <span class="from">Export below — downloads a text file listing every track missing genre, key or BPM, plus instructions for the AI.</span></span></div>
+            <div class="cleanrow"><span class="desc"><b>2.</b> <span class="from">Paste the whole file into an AI chat (ChatGPT, Claude, or similar) — or upload it, if that chat supports files. The instructions inside tell it exactly what to fill in and how to answer.</span></span></div>
+            <div class="cleanrow"><span class="desc"><b>3.</b> <span class="from">Save its reply as a text file.</span></span></div>
+            <div class="cleanrow" style="margin-bottom:0;"><span class="desc"><b>4.</b> <span class="from">Import that file below. Crate matches it back to your tracks and shows exactly what would change — nothing is applied until you say so.</span></span></div>
+          </div>
+
+          <div class="dashsection">
+            <div class="cleanrow" style="margin-bottom:0;"><span class="desc"><b>Genre is a reasonable guess for an AI to make from an artist and title. BPM and key are not.</b> <span class="from">Those two come from analyzing the actual audio — an AI is estimating from genre and era, not listening to the track. Spot-check a few before relying on them to beatmatch.</span></span></div>
+          </div>
+
+          <div class="dashsection">
+            <h3>1 — export for AI</h3>
+            <div class="stattiles" id="aiStats"></div>
+            <p class="note" style="margin:12px 0 10px;">One text file: the prompt, plus every track missing genre, key or BPM.</p>
+            <button class="btn primary small" id="aiExportBtn">Export for AI</button>
+          </div>
+
+          <div class="dashsection">
+            <h3>2 — import its answer</h3>
+            <p class="note" style="margin:-6px 0 12px;">Accepts the file the AI gives back. Reviewed below before anything is applied.</p>
+            <input type="file" id="aiImportInput" accept=".txt,.json" style="display:none;">
+            <button class="btn ghost small" id="aiImportBtn">Import AI's answer…</button>
+            <div id="aiImportStatus" class="note" style="margin-top:10px;"></div>
+          </div>
+
+          <div class="dashsection" id="aiReviewSection" style="display:none;">
+            <h3>Review suggested changes<button class="btn small primary" id="aiApplyAllBtn" style="margin-left:auto;">Apply all</button></h3>
+            <div id="aiReviewList"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1434,6 +1472,7 @@
     document.getElementById('pageDashboard').style.display = page==='dashboard' ? '' : 'none';
     document.getElementById('pageDataClean').style.display = page==='dataclean' ? '' : 'none';
     document.getElementById('pageGraph').style.display = page==='graph' ? '' : 'none';
+    document.getElementById('pageAiAssist').style.display = page==='aiassist' ? '' : 'none';
     document.querySelectorAll('.pagetab').forEach(b=> b.classList.toggle('on', b.dataset.page===page));
     const showRail = page==='library';
     document.querySelector('.rail').style.display = showRail ? '' : 'none';
@@ -1441,6 +1480,7 @@
     if(page==='dashboard') renderDashboard();
     if(page==='dataclean') renderDataClean();
     if(page==='graph') renderGraph(); else stopGraphSim();
+    if(page==='aiassist') renderAiAssist();
   }
   document.querySelectorAll('.pagetab').forEach(b=>{
     b.addEventListener('click', ()=> setPage(b.dataset.page));
@@ -2821,6 +2861,7 @@ ${playlistNodes}
     renderLibrary();
     renderHealthBar();
     renderDataClean();
+    renderAiAssist();
   }
 
   function renderGenreFamiliesSummary(){
@@ -3040,12 +3081,18 @@ ${playlistNodes}
     editor.scrollIntoView({ behavior:'smooth', block:'start' });
   });
 
+  function computeMissingFields(){
+    return {
+      missingGenre: tracks.filter(t=>!effectiveGenre(t)),
+      missingKey: tracks.filter(t=>!t.key),
+      missingBpm: tracks.filter(t=>!t.bpm)
+    };
+  }
+
   function renderDataClean(){
     const page = document.getElementById('pageDataClean');
     if(!page) return;
-    const missingGenre = tracks.filter(t=>!effectiveGenre(t));
-    const missingKey = tracks.filter(t=>!t.key);
-    const missingBpm = tracks.filter(t=>!t.bpm);
+    const { missingGenre, missingKey, missingBpm } = computeMissingFields();
     const dupGroups = computeDuplicateGroups();
 
     document.getElementById('dcStats').innerHTML = [
@@ -3060,6 +3107,220 @@ ${playlistNodes}
     renderGenreFillSuggestions();
     renderMissingTable(missingGenre, missingKey, missingBpm);
     renderDuplicateGroups(dupGroups);
+  }
+
+  // ---------------- AI assist ----------------
+  function buildAiPromptInstructions(){
+    return [
+      'You are helping a DJ fill in missing metadata for tracks from their Rekordbox library.',
+      '',
+      'For each track in the DATA block below, some fields are missing — see that track\'s "missing" list.',
+      'Using its title, artist, and any genre already known, fill in ONLY the fields listed in "missing"',
+      'for that track, as best you can determine.',
+      '',
+      'Rules:',
+      '- genre: a short, common genre name (e.g. "House", "Techno", "Disco", "Drum & Bass").',
+      '- key: Camelot notation only (e.g. "8A", "11B") — not standard musical notation like "C minor".',
+      '- bpm: a plain number (e.g. 124) — your best estimate from the track/genre/era if you don\'t know the exact value.',
+      '- If you have no reasonable basis for a field, leave it out for that track rather than guessing wildly — omitting it is better than a fabricated value.',
+      '- BPM and key are estimates from context, not measurements. They will be spot-checked before use, so a sensible estimate is fine, a random guess is not.',
+      '- Do not include or change any field that was not listed as missing for that track.',
+      '- Echo back every track\'s "id" exactly as given, even for tracks you can\'t fill in anything for.',
+      '',
+      'Return ONLY a JSON object in exactly this shape, with no other text before or after it, and no',
+      'markdown code fences:',
+      '',
+      '{"tracks":[{"id":"123","genre":"House","bpm":124},{"id":"456","key":"8A"}]}'
+    ].join('\n');
+  }
+
+  function exportAiRemediation(){
+    const { missingGenre, missingKey, missingBpm } = computeMissingFields();
+    const ids = new Set([...missingGenre.map(t=>t.id), ...missingKey.map(t=>t.id), ...missingBpm.map(t=>t.id)]);
+    if(!ids.size){ showToast('Nothing missing — no file to export.'); return; }
+    const rows = tracks.filter(t=>ids.has(t.id)).map(t=>{
+      const missing = [];
+      if(!effectiveGenre(t)) missing.push('genre');
+      if(!t.key) missing.push('key');
+      if(!t.bpm) missing.push('bpm');
+      return {
+        id: t.id,
+        name: t.name,
+        artist: t.artist,
+        genre: effectiveGenre(t) || undefined,
+        key: t.key || undefined,
+        bpm: t.bpm || undefined,
+        missing
+      };
+    });
+    const content = [
+      'CRATE — AI DATA REMEDIATION',
+      '============================',
+      '',
+      'Paste this whole file into an AI assistant (ChatGPT, Claude, or similar) — the instructions below',
+      'tell it what to do. Save its reply as a text file and import it back into Crate\'s "AI Assist" tab.',
+      '',
+      'INSTRUCTIONS FOR THE AI',
+      '------------------------',
+      buildAiPromptInstructions(),
+      '',
+      'DATA',
+      '----',
+      JSON.stringify({ tracks: rows }, null, 2)
+    ].join('\n');
+    downloadBlob(new Blob([content], { type:'text/plain' }), 'crate-ai-remediation.txt');
+    showToast('Exported '+rows.length+' track'+(rows.length===1?'':'s')+' for AI review.');
+  }
+  document.getElementById('aiExportBtn').addEventListener('click', exportAiRemediation);
+
+  function extractJsonObject(text){
+    const trimmed = text.trim();
+    try{ return JSON.parse(trimmed); }catch(e){}
+    const start = trimmed.indexOf('{');
+    if(start === -1) return null;
+    let depth = 0;
+    for(let i=start;i<trimmed.length;i++){
+      if(trimmed[i] === '{') depth++;
+      else if(trimmed[i] === '}'){
+        depth--;
+        if(depth === 0){
+          try{ return JSON.parse(trimmed.slice(start, i+1)); }catch(e){ return null; }
+        }
+      }
+    }
+    return null;
+  }
+
+  let aiPendingChanges = [];
+  function applyAiChange(c){
+    const t = tracksById[c.id];
+    if(!t) return;
+    t[c.field] = c.value;
+  }
+
+  function buildAiReview(entries){
+    const status = document.getElementById('aiImportStatus');
+    const section = document.getElementById('aiReviewSection');
+    const list = document.getElementById('aiReviewList');
+    const changes = [];
+    let unknownIds = 0, alreadyFilled = 0;
+
+    entries.forEach(entry=>{
+      if(!entry || typeof entry !== 'object' || entry.id == null) return;
+      const t = tracksById[entry.id];
+      if(!t){ unknownIds++; return; }
+
+      if('genre' in entry && entry.genre != null && String(entry.genre).trim()){
+        if(!effectiveGenre(t)) changes.push({ id:t.id, field:'genre', label:'Genre', value: String(entry.genre).trim(), track:t });
+        else alreadyFilled++;
+      }
+      if('key' in entry && entry.key != null && String(entry.key).trim()){
+        if(!t.key) changes.push({ id:t.id, field:'key', label:'Key', value: String(entry.key).trim(), track:t });
+        else alreadyFilled++;
+      }
+      if('bpm' in entry && entry.bpm != null && String(entry.bpm).trim() !== ''){
+        const v = parseFloat(String(entry.bpm).replace(/[^\d.]/g,''));
+        if(v > 0){
+          if(!t.bpm) changes.push({ id:t.id, field:'bpm', label:'BPM', value: v, track:t });
+          else alreadyFilled++;
+        }
+      }
+    });
+
+    aiPendingChanges = changes;
+    list.innerHTML = '';
+
+    if(!changes.length){
+      section.style.display = 'none';
+      const bits = [];
+      if(unknownIds) bits.push(unknownIds+" track"+(unknownIds===1?'':'s')+" in that file don't match your current library");
+      if(alreadyFilled) bits.push('everything else in it was already filled in');
+      status.textContent = bits.length ? 'Nothing to apply — ' + bits.join(', ') + '.' : "Nothing to apply — that file didn't suggest any new values.";
+      return;
+    }
+
+    const trackCount = new Set(changes.map(c=>c.id)).size;
+    status.textContent = 'Found ' + changes.length + ' suggested value' + (changes.length===1?'':'s') + ' across ' + trackCount + ' track' + (trackCount===1?'':'s')
+      + (unknownIds ? ' (' + unknownIds + " didn't match a track in your library)" : '') + '. Review below, then apply.';
+    section.style.display = 'block';
+
+    changes.forEach(c=>{
+      const row = document.createElement('div');
+      row.className = 'cleanrow';
+      row.innerHTML = `<span class="desc"><b>${escapeHtml(c.track.name)}</b> <span class="from">${escapeHtml(c.track.artist||'')} — ${c.label}: ${escapeHtml(String(c.value))}</span></span>`;
+      const btn = document.createElement('button');
+      btn.className = 'btn small';
+      btn.textContent = 'Apply';
+      btn.addEventListener('click', ()=>{
+        const prev = c.track[c.field];
+        applyAiChange(c);
+        persistAllTrackData();
+        afterTrackFieldEdit();
+        row.remove();
+        aiPendingChanges = aiPendingChanges.filter(x=>x!==c);
+        if(!aiPendingChanges.length) section.style.display = 'none';
+        setUndo('Applied '+c.label.toLowerCase()+' for "'+c.track.name+'"', ()=>{
+          c.track[c.field] = prev;
+          persistAllTrackData();
+          afterTrackFieldEdit();
+        });
+      });
+      row.appendChild(btn);
+      list.appendChild(row);
+    });
+  }
+
+  document.getElementById('aiImportBtn').addEventListener('click', ()=> document.getElementById('aiImportInput').click());
+  document.getElementById('aiImportInput').addEventListener('change', e=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ev=>{
+      const parsed = extractJsonObject(String(ev.target.result));
+      const status = document.getElementById('aiImportStatus');
+      if(!parsed || !Array.isArray(parsed.tracks)){
+        status.textContent = "Couldn't find a valid list of tracks in that file — make sure it's the AI's reply (or the file it gave you to download), not the original export.";
+        document.getElementById('aiReviewSection').style.display = 'none';
+        aiPendingChanges = [];
+        return;
+      }
+      buildAiReview(parsed.tracks);
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  document.getElementById('aiApplyAllBtn').addEventListener('click', ()=>{
+    if(!aiPendingChanges.length) return;
+    const n = aiPendingChanges.length;
+    const snapshot = aiPendingChanges.map(c=>({ id:c.id, field:c.field, prev: c.track[c.field] }));
+    aiPendingChanges.forEach(applyAiChange);
+    persistAllTrackData();
+    aiPendingChanges = [];
+    document.getElementById('aiReviewSection').style.display = 'none';
+    document.getElementById('aiReviewList').innerHTML = '';
+    document.getElementById('aiImportStatus').textContent = 'Applied ' + n + ' suggested value' + (n===1?'':'s') + '.';
+    afterTrackFieldEdit();
+    showToast('Applied '+n+' suggested value'+(n===1?'':'s')+'.');
+    setUndo('Applied '+n+' AI-suggested value'+(n===1?'':'s'), ()=>{
+      snapshot.forEach(s=>{
+        const t = tracksById[s.id];
+        if(t) t[s.field] = s.prev;
+      });
+      persistAllTrackData();
+      afterTrackFieldEdit();
+    });
+  });
+
+  function renderAiAssist(){
+    const page = document.getElementById('pageAiAssist');
+    if(!page) return;
+    const { missingGenre, missingKey, missingBpm } = computeMissingFields();
+    document.getElementById('aiStats').innerHTML = [
+      { v: missingGenre.length, l: 'missing genre' },
+      { v: missingKey.length, l: 'missing key' },
+      { v: missingBpm.length, l: 'missing BPM' }
+    ].map(s=> `<div class="stattile"><div class="v">${s.v}</div><div class="l">${s.l}</div></div>`).join('');
   }
 
   // ---------------- graph ----------------

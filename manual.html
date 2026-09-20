@@ -96,6 +96,7 @@
       <a class="sub" href="#dc-missing">Missing genre, key & BPM</a>
       <a class="sub" href="#dc-dupes">Duplicates</a>
       <a href="#graph">Graph</a>
+      <a href="#aiassist">AI Assist</a>
       <a href="#export">Exporting & backing up</a>
       <a class="sub" href="#export-db">Save & load database</a>
       <a href="#troubleshoot">Troubleshooting</a>
@@ -103,7 +104,7 @@
 
     <main>
       <h1>Guide</h1>
-      <p class="lede">Everything Crate does, organized the way you'll actually move through the app — Library, then Builder, then Gigs, then Dashboard, Data Cleaning and Graph for understanding and tidying up what you've got.</p>
+      <p class="lede">Everything Crate does, organized the way you'll actually move through the app — Library, then Builder, then Gigs, then Dashboard, Data Cleaning, Graph, and AI Assist for understanding and tidying up what you've got.</p>
 
       <div class="section" id="quickstart">
         <h2>Quickstart</h2>
@@ -222,6 +223,19 @@
           <li><b>Re-layout</b> reshuffles the physics simulation from scratch; <b>Reset view</b> re-centers and re-zooms without touching the layout itself.</li>
         </ul>
         <div class="callout">A very large selection only draws the ~200 most cross-referenced tracks, and says so in a note under the canvas. Narrow the crate selection or add a filter to see the rest.</div>
+      </div>
+
+      <div class="section" id="aiassist">
+        <h2>AI Assist</h2>
+        <p>A way to use an AI assistant you already have (ChatGPT, Claude, or similar) to help fill in tracks missing genre, key, or BPM — without giving that assistant, or anyone else, access to your library. Nothing here talks to an AI directly or sends your data anywhere; it's a file you export, hand to an AI yourself, and a reply file you import back.</p>
+
+        <h3>1 — Export for AI</h3>
+        <p><b>Export for AI</b> downloads a single text file listing every track currently missing genre, key, or BPM, with each track's title, artist, and whatever fields it does have. The file also includes a ready-made prompt explaining the task and the exact format the AI should reply in — paste the whole file into the AI assistant of your choice.</p>
+
+        <h3>2 — Import its answer</h3>
+        <p>Save the AI's reply as a text file and import it with <b>Import AI's answer…</b>. Crate re-checks every suggested value against your library as it currently stands — a field the AI filled in that's no longer missing (or that changed since export) is silently skipped, and a track id the AI got wrong is flagged rather than applied to the wrong track. What's left shows up as a review list: apply changes one at a time, or all at once with <b>Apply all</b>.</p>
+        <div class="callout">Genre is reasonable for an AI to guess from title/artist/context. BPM and key are estimates at best — Crate treats an AI's answer for those the same as any other suggestion: reviewable and undoable, never applied blind. Spot-check them the way you would any Data Cleaning suggestion.</div>
+        <div class="callout">Applying is reversible with the Undo bar that appears, same as elsewhere in Crate — but only for the single most recent apply (a row, or an "Apply all" batch).</div>
       </div>
 
       <div class="section" id="export">
