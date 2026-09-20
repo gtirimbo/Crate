@@ -14,6 +14,7 @@
     --amber:#ffb238; --amber-dim:#8a6a2f;
     --green:#8cff9e;
     --red:#ff6b5c;
+    --blue:#5ab4ff;
     --sans:'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
     --mono:'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
     --radius:7px;
@@ -171,6 +172,50 @@
 
   .note{ font-family:var(--mono); font-size:11.5px; color:var(--text-faint); line-height:1.7; margin-top:10px; }
   .empty{ color:var(--text-faint); font-size:13px; font-style:italic; padding:20px 0; text-align:center; }
+
+  /* ---------- dashboard ---------- */
+  .stattiles{ display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
+  .stattile{ background:var(--panel-2); border:1px solid var(--line-soft); border-radius:8px; padding:12px 14px; }
+  .stattile .v{ font-family:var(--mono); font-size:20px; font-weight:600; color:var(--amber); line-height:1.2; }
+  .stattile .l{ font-size:11px; color:var(--text-faint); margin-top:3px; }
+
+  .dashsection{ margin-top:24px; }
+  .dashsection h3{ font-size:13px; font-weight:600; margin:0 0 12px; display:flex; align-items:center; gap:10px; }
+  .dashlegend{ font-family:var(--mono); font-size:11px; color:var(--text-faint); font-weight:400; display:flex; align-items:center; gap:5px; }
+  .dashlegend-swatch{ width:9px; height:9px; border-radius:2px; display:inline-block; margin-left:10px; }
+  .dashlegend-swatch:first-child{ margin-left:0; }
+  .dashlegend-swatch.major{ background:var(--amber); }
+  .dashlegend-swatch.minor{ background:var(--blue); }
+
+  .dashbarlist{ display:flex; flex-direction:column; gap:7px; }
+  .dashbarrow{ display:grid; grid-template-columns:130px 1fr 32px; align-items:center; gap:10px; font-size:12px; }
+  .dashbarrow .lbl{ color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dashbartrack{ height:10px; background:var(--field); border-radius:5px; overflow:hidden; }
+  .dashbarfill{ height:100%; background:var(--amber); border-radius:5px; min-width:3px; }
+  .dashbarrow .n{ font-family:var(--mono); color:var(--text-faint); text-align:right; }
+  @media (max-width:600px){ .dashbarrow{ grid-template-columns:80px 1fr 28px; } }
+
+  .dashhist{ display:flex; align-items:flex-end; gap:2px; height:120px; border-bottom:1px solid var(--line); padding-bottom:2px; }
+  .dashhistbar{ flex:1; background:var(--amber); border-radius:3px 3px 0 0; min-height:2px; }
+  .dashhistaxis{ display:flex; justify-content:space-between; font-family:var(--mono); font-size:10.5px; color:var(--text-faint); margin-top:6px; }
+
+  .dashrange{ display:flex; flex-direction:column; gap:10px; }
+  .dashrangerow{ display:grid; grid-template-columns:130px 1fr; align-items:center; gap:10px; font-size:12px; }
+  .dashrangerow .lbl{ color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dashrangetrack{ position:relative; height:14px; }
+  .dashrangetrack .bg{ position:absolute; left:0; right:0; top:6px; height:2px; background:var(--line); border-radius:1px; }
+  .dashrangetrack .span{ position:absolute; top:5px; height:4px; background:var(--amber-dim); border-radius:2px; }
+  .dashrangetrack .avg{ position:absolute; top:2px; width:10px; height:10px; margin-left:-5px; background:var(--amber); border-radius:50%; border:2px solid var(--panel); }
+  .dashrangeaxis{ display:flex; justify-content:space-between; font-family:var(--mono); font-size:10.5px; color:var(--text-faint); margin-top:2px; padding-left:140px; }
+  @media (max-width:600px){ .dashrangerow{ grid-template-columns:80px 1fr; } .dashrangeaxis{ padding-left:90px; } }
+
+  .dashkeychart{ display:flex; align-items:flex-end; gap:8px; height:110px; border-bottom:1px solid var(--line); padding-bottom:2px; }
+  .dashkeygroup{ flex:1; display:flex; align-items:flex-end; gap:2px; height:100%; }
+  .dashkeybar{ flex:1; border-radius:3px 3px 0 0; min-height:1px; }
+  .dashkeybar.major{ background:var(--amber); }
+  .dashkeybar.minor{ background:var(--blue); }
+  .dashkeyaxis{ display:flex; gap:8px; margin-top:6px; }
+  .dashkeyaxis span{ flex:1; text-align:center; font-family:var(--mono); font-size:10.5px; color:var(--text-faint); }
 </style>
 </head>
 <body>
@@ -214,6 +259,7 @@
       <button class="pagetab on" data-page="library">Library</button>
       <button class="pagetab" data-page="builder">Build a new crate</button>
       <button class="pagetab" data-page="gigs">Gigs</button>
+      <button class="pagetab" data-page="dashboard">Dashboard</button>
     </div>
     <div class="grid">
       <div class="rail">
@@ -368,6 +414,44 @@
               <button class="btn small" id="newGigBtn" style="margin-top:10px;width:100%;">+ New gig</button>
             </div>
             <div id="gigEditor"><div class="crate-empty">Select or create a gig to start blocking out a set.</div></div>
+          </div>
+        </div>
+
+        <div class="card" id="pageDashboard" style="display:none;">
+          <h2>Dashboard
+            <select id="dashScopeSelect" class="mono" style="margin-left:auto;background:var(--field);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12px;">
+              <option value="all">Whole library</option>
+            </select>
+          </h2>
+          <div id="dashEmpty" class="empty" style="display:none;">Nothing in this scope yet.</div>
+          <div id="dashBody">
+            <div class="stattiles" id="dashStats"></div>
+
+            <div class="dashsection">
+              <h3>Genres</h3>
+              <div id="dashGenreChart"></div>
+            </div>
+
+            <div class="dashsection">
+              <h3>BPM distribution</h3>
+              <div id="dashBpmHist"></div>
+            </div>
+
+            <div class="dashsection">
+              <h3>BPM range by genre</h3>
+              <p class="note" style="margin:-6px 0 12px;">Bar spans min–max BPM for the genre, dot marks the average. Top 10 genres by track count.</p>
+              <div id="dashBpmByGenre"></div>
+            </div>
+
+            <div class="dashsection">
+              <h3>Key distribution <span class="dashlegend"><span class="dashlegend-swatch major"></span>Major<span class="dashlegend-swatch minor"></span>Minor</span></h3>
+              <div id="dashKeyChart"></div>
+            </div>
+
+            <div class="dashsection">
+              <h3>Top artists</h3>
+              <div id="dashArtists"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -1109,7 +1193,9 @@
     document.getElementById('pageLibrary').style.display = page==='library' ? '' : 'none';
     document.getElementById('pageBuilder').style.display = page==='builder' ? '' : 'none';
     document.getElementById('pageGigs').style.display = page==='gigs' ? '' : 'none';
+    document.getElementById('pageDashboard').style.display = page==='dashboard' ? '' : 'none';
     document.querySelectorAll('.pagetab').forEach(b=> b.classList.toggle('on', b.dataset.page===page));
+    if(page==='dashboard') renderDashboard();
   }
   document.querySelectorAll('.pagetab').forEach(b=>{
     b.addEventListener('click', ()=> setPage(b.dataset.page));
@@ -2131,6 +2217,263 @@ ${playlistNodes}
 
     downloadBlob(new Blob([nml], { type:'application/xml' }), 'crate-export.nml');
   });
+
+  // ---------------- dashboard ----------------
+  function dashboardScopeTracks(){
+    const sel = document.getElementById('dashScopeSelect');
+    const val = sel ? sel.value : 'all';
+    if(!val || val==='all') return tracks.slice();
+    if(val.indexOf('pl:')===0){
+      const pl = playlists.find(p=>p.key===val.slice(3));
+      return pl ? pl.trackIds.map(id=>tracksById[id]).filter(Boolean) : tracks.slice();
+    }
+    if(val.indexOf('gen:')===0){
+      const g = generated.find(x=>x.id===val.slice(4));
+      return g ? g.trackIds.map(id=>tracksById[id]).filter(Boolean) : tracks.slice();
+    }
+    return tracks.slice();
+  }
+
+  function populateDashboardScope(){
+    const sel = document.getElementById('dashScopeSelect');
+    if(!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = '<option value="all">Whole library</option>';
+    if(playlists.length){
+      const og = document.createElement('optgroup');
+      og.label = 'Crates (from rekordbox)';
+      playlists.forEach(pl=>{
+        const opt = document.createElement('option');
+        opt.value = 'pl:'+pl.key;
+        opt.textContent = pl.path;
+        og.appendChild(opt);
+      });
+      sel.appendChild(og);
+    }
+    if(generated.length){
+      const og = document.createElement('optgroup');
+      og.label = 'Built with Crate';
+      generated.forEach(g=>{
+        const opt = document.createElement('option');
+        opt.value = 'gen:'+g.id;
+        opt.textContent = g.name;
+        og.appendChild(opt);
+      });
+      sel.appendChild(og);
+    }
+    if(Array.from(sel.options).some(o=>o.value===prev)) sel.value = prev;
+  }
+
+  function renderDashStats(list){
+    const el = document.getElementById('dashStats');
+    const withBpm = list.map(t=>t.bpm).filter(b=>b>0);
+    const avgBpm = withBpm.length ? withBpm.reduce((s,b)=>s+b,0)/withBpm.length : 0;
+    const totalSeconds = list.reduce((s,t)=>s+(t.totalTime||0),0);
+    const genreCount = new Set(list.map(t=>effectiveGenre(t)).filter(Boolean)).size;
+    const artistCount = new Set(list.map(t=>(t.artist||'').trim()).filter(Boolean)).size;
+    const tiles = [
+      { v: list.length, l: 'tracks' },
+      { v: formatDuration(totalSeconds), l: 'total playtime' },
+      { v: avgBpm ? avgBpm.toFixed(1) : '—', l: 'avg BPM' },
+      { v: genreCount, l: 'genres' },
+      { v: artistCount, l: 'artists' }
+    ];
+    el.innerHTML = tiles.map(t=>`<div class="stattile"><div class="v">${escapeHtml(String(t.v))}</div><div class="l">${t.l}</div></div>`).join('');
+  }
+
+  function computeGenreCounts(list){
+    const counts = {};
+    list.forEach(t=>{
+      const g = effectiveGenre(t) || 'Unknown';
+      counts[g] = (counts[g]||0)+1;
+    });
+    return Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  }
+
+  function topWithOther(pairs, n){
+    if(pairs.length<=n) return pairs;
+    const top = pairs.slice(0,n);
+    const restCount = pairs.slice(n).reduce((s,p)=>s+p[1],0);
+    if(restCount) top.push(['Other', restCount]);
+    return top;
+  }
+
+  function computeArtistCounts(list){
+    const counts = {};
+    list.forEach(t=>{
+      const a = (t.artist||'').trim() || 'Unknown';
+      counts[a] = (counts[a]||0)+1;
+    });
+    return Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  }
+
+  function renderDashBarList(containerId, pairs){
+    const el = document.getElementById(containerId);
+    if(!pairs.length){ el.innerHTML = '<div class="empty" style="padding:10px 0;">Not enough data.</div>'; return; }
+    const max = pairs[0][1];
+    const list = document.createElement('div');
+    list.className = 'dashbarlist';
+    pairs.forEach(([label,count])=>{
+      const row = document.createElement('div');
+      row.className = 'dashbarrow';
+      const pct = max ? Math.max(3, Math.round(count/max*100)) : 0;
+      row.innerHTML = `<span class="lbl" title="${escapeHtml(label)}">${escapeHtml(label)}</span>
+        <div class="dashbartrack"><div class="dashbarfill" style="width:${pct}%" title="${escapeHtml(label)}: ${count} track${count===1?'':'s'}"></div></div>
+        <span class="n">${count}</span>`;
+      list.appendChild(row);
+    });
+    el.innerHTML = '';
+    el.appendChild(list);
+  }
+
+  function renderDashHistogram(containerId, list){
+    const el = document.getElementById(containerId);
+    const bpms = list.map(t=>t.bpm).filter(b=>b>0);
+    if(bpms.length<2){ el.innerHTML = '<div class="empty" style="padding:10px 0;">Not enough BPM data.</div>'; return; }
+    const min = Math.min(...bpms), max = Math.max(...bpms);
+    const binSize = 4;
+    const binStart = Math.floor(min/binSize)*binSize;
+    const binEnd = Math.max(binStart+binSize, Math.ceil(max/binSize)*binSize);
+    const binCount = Math.round((binEnd-binStart)/binSize);
+    const bins = new Array(binCount).fill(0);
+    bpms.forEach(b=>{
+      let idx = Math.floor((b-binStart)/binSize);
+      if(idx>=binCount) idx = binCount-1;
+      if(idx<0) idx = 0;
+      bins[idx]++;
+    });
+    const maxCount = Math.max(...bins);
+    el.innerHTML = '';
+    const chart = document.createElement('div');
+    chart.className = 'dashhist';
+    bins.forEach((count,i)=>{
+      const bar = document.createElement('div');
+      bar.className = 'dashhistbar';
+      bar.style.height = maxCount ? Math.max(2, Math.round(count/maxCount*100)) + '%' : '2px';
+      const lo = binStart+i*binSize, hi = lo+binSize;
+      bar.title = lo+'–'+hi+' BPM: '+count+' track'+(count===1?'':'s');
+      chart.appendChild(bar);
+    });
+    const axis = document.createElement('div');
+    axis.className = 'dashhistaxis';
+    axis.innerHTML = `<span>${binStart} BPM</span><span>${binEnd} BPM</span>`;
+    el.appendChild(chart);
+    el.appendChild(axis);
+  }
+
+  function renderDashBpmByGenre(containerId, list){
+    const el = document.getElementById(containerId);
+    const byGenre = {};
+    list.forEach(t=>{
+      if(!(t.bpm>0)) return;
+      const g = effectiveGenre(t) || 'Unknown';
+      (byGenre[g] = byGenre[g] || []).push(t.bpm);
+    });
+    let genres = Object.entries(byGenre)
+      .filter(([g,bpms])=> bpms.length>=2 && Math.max(...bpms)>Math.min(...bpms))
+      .map(([g,bpms])=>({
+        genre: g,
+        min: Math.min(...bpms),
+        max: Math.max(...bpms),
+        avg: bpms.reduce((s,b)=>s+b,0)/bpms.length,
+        n: bpms.length
+      }))
+      .sort((a,b)=>b.n-a.n)
+      .slice(0,10)
+      .sort((a,b)=>a.avg-b.avg);
+
+    if(!genres.length){ el.innerHTML = '<div class="empty" style="padding:10px 0;">Not enough BPM spread to chart.</div>'; return; }
+
+    const globalMin = Math.min(...genres.map(g=>g.min));
+    const globalMax = Math.max(...genres.map(g=>g.max));
+    const span = (globalMax-globalMin) || 1;
+
+    el.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'dashrange';
+    genres.forEach(g=>{
+      const row = document.createElement('div');
+      row.className = 'dashrangerow';
+      const left = (g.min-globalMin)/span*100;
+      const right = (g.max-globalMin)/span*100;
+      const avgPct = (g.avg-globalMin)/span*100;
+      row.innerHTML = `<span class="lbl" title="${escapeHtml(g.genre)}">${escapeHtml(g.genre)}</span>
+        <div class="dashrangetrack" title="${escapeHtml(g.genre)}: ${g.min.toFixed(0)}–${g.max.toFixed(0)} BPM, avg ${g.avg.toFixed(1)} (${g.n} tracks)">
+          <div class="bg"></div>
+          <div class="span" style="left:${left}%;width:${Math.max(1,right-left)}%;"></div>
+          <div class="avg" style="left:${avgPct}%;"></div>
+        </div>`;
+      wrap.appendChild(row);
+    });
+    el.appendChild(wrap);
+    const axis = document.createElement('div');
+    axis.className = 'dashrangeaxis';
+    axis.innerHTML = `<span>${globalMin.toFixed(0)} BPM</span><span>${globalMax.toFixed(0)} BPM</span>`;
+    el.appendChild(axis);
+  }
+
+  function renderDashKeyChart(containerId, list){
+    const el = document.getElementById(containerId);
+    const counts = {};
+    let any = false;
+    list.forEach(t=>{
+      const code = toCamelotCode(t.key);
+      if(!code) return;
+      any = true;
+      counts[code] = (counts[code]||0)+1;
+    });
+    if(!any){ el.innerHTML = '<div class="empty" style="padding:10px 0;">No keys in a recognizable format.</div>'; return; }
+    const maxCount = Math.max(1, ...Object.values(counts));
+    el.innerHTML = '';
+    const chart = document.createElement('div');
+    chart.className = 'dashkeychart';
+    const axis = document.createElement('div');
+    axis.className = 'dashkeyaxis';
+    for(let i=1;i<=12;i++){
+      const a = counts[i+'A']||0, b = counts[i+'B']||0;
+      const group = document.createElement('div');
+      group.className = 'dashkeygroup';
+      const barA = document.createElement('div');
+      barA.className = 'dashkeybar minor';
+      barA.style.height = a ? Math.max(2, Math.round(a/maxCount*100))+'%' : '1px';
+      barA.title = i+'A (minor): '+a+' track'+(a===1?'':'s');
+      const barB = document.createElement('div');
+      barB.className = 'dashkeybar major';
+      barB.style.height = b ? Math.max(2, Math.round(b/maxCount*100))+'%' : '1px';
+      barB.title = i+'B (major): '+b+' track'+(b===1?'':'s');
+      group.appendChild(barA);
+      group.appendChild(barB);
+      chart.appendChild(group);
+      const lbl = document.createElement('span');
+      lbl.textContent = i;
+      axis.appendChild(lbl);
+    }
+    el.appendChild(chart);
+    el.appendChild(axis);
+  }
+
+  function renderDashboard(){
+    const page = document.getElementById('pageDashboard');
+    if(!page) return;
+    populateDashboardScope();
+    const list = dashboardScopeTracks();
+    const emptyEl = document.getElementById('dashEmpty');
+    const bodyEl = document.getElementById('dashBody');
+    if(!list.length){
+      emptyEl.style.display = 'block';
+      bodyEl.style.display = 'none';
+      return;
+    }
+    emptyEl.style.display = 'none';
+    bodyEl.style.display = 'block';
+    renderDashStats(list);
+    renderDashBarList('dashGenreChart', topWithOther(computeGenreCounts(list), 10));
+    renderDashHistogram('dashBpmHist', list);
+    renderDashBpmByGenre('dashBpmByGenre', list);
+    renderDashKeyChart('dashKeyChart', list);
+    renderDashBarList('dashArtists', computeArtistCounts(list));
+  }
+  document.getElementById('dashScopeSelect').addEventListener('change', renderDashboard);
 
   // ---------------- init ----------------
   function renderAll(){
