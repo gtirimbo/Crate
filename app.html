@@ -216,6 +216,23 @@
   .dashkeybar.minor{ background:var(--blue); }
   .dashkeyaxis{ display:flex; gap:8px; margin-top:6px; }
   .dashkeyaxis span{ flex:1; text-align:center; font-family:var(--mono); font-size:10.5px; color:var(--text-faint); }
+
+  /* ---------- graph ---------- */
+  .graphtoolbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  .graphtoolbar select, .graphtoolbar input[type=text]{ font-size:12px; padding:7px 9px; }
+  .graphlegend{ font-family:var(--mono); font-size:11px; color:var(--text-faint); display:flex; align-items:center; gap:5px; margin-left:auto; }
+  .graphlegend .sw{ width:9px; height:9px; border-radius:50%; display:inline-block; margin-left:10px; }
+  .graphlegend .sw:first-child{ margin-left:0; }
+  .graphlegend .sw.crate{ background:var(--amber); }
+  .graphlegend .sw.track{ background:var(--blue); }
+  .graphcanvas{ position:relative; border:1px solid var(--line); border-radius:8px; background:var(--panel-2); overflow:hidden; height:560px; }
+  .graphcanvas svg{ width:100%; height:100%; display:block; cursor:grab; touch-action:none; }
+  .graphcanvas svg.panning{ cursor:grabbing; }
+  .graphnode{ cursor:pointer; }
+  .graphnode text{ font-family:var(--mono); font-size:9.5px; fill:var(--text-dim); pointer-events:none; }
+  .graphedge{ stroke:var(--line); stroke-width:1; }
+  .graphtooltip{ position:absolute; pointer-events:none; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:6px 9px; font-size:11.5px; color:var(--text); box-shadow:0 4px 14px rgba(0,0,0,.4); display:none; white-space:nowrap; z-index:5; }
+  .graphnote{ font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-top:10px; }
 </style>
 </head>
 <body>
@@ -260,6 +277,8 @@
       <button class="pagetab" data-page="builder">Build a new crate</button>
       <button class="pagetab" data-page="gigs">Gigs</button>
       <button class="pagetab" data-page="dashboard">Dashboard</button>
+      <button class="pagetab" data-page="dataclean">Data Cleaning</button>
+      <button class="pagetab" data-page="graph">Graph</button>
     </div>
     <div class="grid">
       <div class="rail">
@@ -284,7 +303,6 @@
           <h2>Library <small id="libCount"></small><button class="btn ghost small" id="exportCsvBtn" style="margin-left:auto;">Export CSV</button><button class="btn ghost small" id="toggleLibraryBtn">Hide library</button></h2>
           <div id="libraryContent">
           <div id="healthBar" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px;"></div>
-          <div id="cleanupPanel" style="display:none;margin-bottom:14px;"></div>
           <div class="searchbar">
             <input type="text" id="searchInput" placeholder="Search title, artist, genre, tags…">
             <button class="btn ghost small" id="clearScopeBtn" style="display:none;">Show all tracks</button>
@@ -453,6 +471,68 @@
               <div id="dashArtists"></div>
             </div>
           </div>
+        </div>
+
+        <div class="card" id="pageDataClean" style="display:none;">
+          <h2>Data Cleaning</h2>
+          <p class="note" style="margin:-8px 0 16px;">Genre grouping, missing metadata and duplicates — the housekeeping that doesn't fit anywhere else.</p>
+
+          <div class="stattiles" id="dcStats"></div>
+
+          <div class="dashsection">
+            <h3>Genre spelling cleanup</h3>
+            <div id="dcGenrePanel"></div>
+          </div>
+
+          <div class="dashsection">
+            <h3>Genre families</h3>
+            <p class="note" style="margin:-6px 0 12px;">Groups used for filtering when building a crate.</p>
+            <div id="dcGenreGroups"></div>
+            <button class="btn ghost small" id="dcManageGroupsBtn" style="margin-top:10px;">Manage groups in Build a new crate →</button>
+          </div>
+
+          <div class="dashsection">
+            <h3>Fill missing genre from artist</h3>
+            <p class="note" style="margin:-6px 0 12px;">Where an artist's tagged tracks agree on one genre, apply it to their untagged tracks. Review before applying — these are suggestions, not facts.</p>
+            <div id="dcGenreFill"></div>
+          </div>
+
+          <div class="dashsection">
+            <h3>Missing key &amp; BPM</h3>
+            <p class="note" style="margin:-6px 0 12px;">Rekordbox analyzes these from the audio, so Crate won't guess at them — fill them in by ear here and they're saved with the rest of your library.</p>
+            <div id="dcMissingTable"></div>
+          </div>
+
+          <div class="dashsection">
+            <h3>Possible duplicates</h3>
+            <p class="note" style="margin:-6px 0 12px;">Matched by title + artist. Removing a copy also removes its notes and tags, and takes it out of any crate it's in.</p>
+            <div id="dcDuplicates"></div>
+          </div>
+        </div>
+
+        <div class="card" id="pageGraph" style="display:none;">
+          <h2>Graph</h2>
+          <p class="note" style="margin:-8px 0 16px;">Tracks connected to the crates they belong to — pick a crate to focus on it, or stay zoomed out to see how your library is structured overall.</p>
+          <div class="graphtoolbar">
+            <select id="graphScopeSelect" class="mono" style="background:var(--field);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px 8px;">
+              <option value="all">All crates (overview)</option>
+            </select>
+            <input type="text" id="graphSearchInput" placeholder="highlight a track, artist or crate…" style="min-width:220px;">
+            <button class="btn ghost small" id="graphRelayoutBtn">Re-layout</button>
+            <button class="btn ghost small" id="graphResetViewBtn">Reset view</button>
+            <span class="graphlegend"><span class="sw crate"></span>Crate<span class="sw track"></span>Track</span>
+          </div>
+          <div id="graphEmpty" class="empty" style="display:none;">Build or import at least one crate to see connections.</div>
+          <div class="graphcanvas" id="graphCanvasWrap" style="display:none;">
+            <svg id="graphSvg" viewBox="0 0 900 560" preserveAspectRatio="xMidYMid meet">
+              <g id="graphZoomGroup">
+                <g id="graphEdgeLayer"></g>
+                <g id="graphNodeLayer"></g>
+              </g>
+            </svg>
+            <div class="graphtooltip" id="graphTooltip"></div>
+          </div>
+          <p class="graphnote" id="graphNote"></p>
         </div>
       </div>
     </div>
@@ -992,6 +1072,15 @@
   function toggleDetail(id){ openRowId = (openRowId===id) ? null : id; renderLibrary(); }
 
   // ---------------- library health ----------------
+  function computeDuplicateGroups(){
+    const dupMap = {};
+    tracks.forEach(t=>{
+      const k = (t.name||'').trim().toLowerCase()+'|'+(t.artist||'').trim().toLowerCase();
+      (dupMap[k]=dupMap[k]||[]).push(t);
+    });
+    return Object.values(dupMap).filter(g=>g.length>1);
+  }
+
   function renderHealthBar(){
     const el = document.getElementById('healthBar');
     if(!el) return;
@@ -1003,12 +1092,7 @@
     const missingKey = tracks.filter(t=>!t.key);
     const missingBpm = tracks.filter(t=>!t.bpm);
     const orphans = tracks.filter(t=>!crateTrackIds.has(t.id));
-    const dupMap = {};
-    tracks.forEach(t=>{
-      const k = (t.name||'').trim().toLowerCase()+'|'+(t.artist||'').trim().toLowerCase();
-      (dupMap[k]=dupMap[k]||[]).push(t.id);
-    });
-    const dupIds = Object.values(dupMap).filter(g=>g.length>1).flat();
+    const dupIds = computeDuplicateGroups().flatMap(g=>g.map(t=>t.id));
 
     const stats = [
       { label:'missing genre', ids: missingGenre.map(t=>t.id) },
@@ -1050,12 +1134,12 @@
   }
 
   function renderCleanupSuggestions(){
-    const panel = document.getElementById('cleanupPanel');
+    const panel = document.getElementById('dcGenrePanel');
     if(!panel) return;
 
     const rawGenres = Array.from(new Set(tracks.map(t=>t.genre).filter(Boolean)));
     const unmapped = rawGenres.filter(g=> !genreMap[g]);
-    if(!unmapped.length){ panel.style.display='none'; panel.innerHTML=''; return; }
+    if(!unmapped.length){ panel.innerHTML = '<div class="empty" style="padding:10px 0;">No genre spelling issues found.</div>'; return; }
 
     const bySig = {};
     unmapped.forEach(g=>{
@@ -1076,9 +1160,8 @@
       }
     });
 
-    if(!suggestions.length){ panel.style.display='none'; panel.innerHTML=''; return; }
+    if(!suggestions.length){ panel.innerHTML = '<div class="empty" style="padding:10px 0;">No genre spelling issues found.</div>'; return; }
 
-    panel.style.display = 'block';
     panel.innerHTML = '';
     const header = document.createElement('div');
     header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;';
@@ -1133,7 +1216,7 @@
     populateGenreChips();
     renderLibrary();
     renderHealthBar();
-    renderCleanupSuggestions();
+    renderDataClean();
     updateBuilder();
   }
 
@@ -1194,8 +1277,12 @@
     document.getElementById('pageBuilder').style.display = page==='builder' ? '' : 'none';
     document.getElementById('pageGigs').style.display = page==='gigs' ? '' : 'none';
     document.getElementById('pageDashboard').style.display = page==='dashboard' ? '' : 'none';
+    document.getElementById('pageDataClean').style.display = page==='dataclean' ? '' : 'none';
+    document.getElementById('pageGraph').style.display = page==='graph' ? '' : 'none';
     document.querySelectorAll('.pagetab').forEach(b=> b.classList.toggle('on', b.dataset.page===page));
     if(page==='dashboard') renderDashboard();
+    if(page==='dataclean') renderDataClean();
+    if(page==='graph') renderGraph(); else stopGraphSim();
   }
   document.querySelectorAll('.pagetab').forEach(b=>{
     b.addEventListener('click', ()=> setPage(b.dataset.page));
@@ -2219,8 +2306,8 @@ ${playlistNodes}
   });
 
   // ---------------- dashboard ----------------
-  function dashboardScopeTracks(){
-    const sel = document.getElementById('dashScopeSelect');
+  function scopeTracksFor(selectId){
+    const sel = document.getElementById(selectId);
     const val = sel ? sel.value : 'all';
     if(!val || val==='all') return tracks.slice();
     if(val.indexOf('pl:')===0){
@@ -2234,11 +2321,11 @@ ${playlistNodes}
     return tracks.slice();
   }
 
-  function populateDashboardScope(){
-    const sel = document.getElementById('dashScopeSelect');
+  function populateScopeSelect(selectId, allLabel){
+    const sel = document.getElementById(selectId);
     if(!sel) return;
     const prev = sel.value;
-    sel.innerHTML = '<option value="all">Whole library</option>';
+    sel.innerHTML = '<option value="all">'+escapeHtml(allLabel || 'Whole library')+'</option>';
     if(playlists.length){
       const og = document.createElement('optgroup');
       og.label = 'Crates (from rekordbox)';
@@ -2455,8 +2542,8 @@ ${playlistNodes}
   function renderDashboard(){
     const page = document.getElementById('pageDashboard');
     if(!page) return;
-    populateDashboardScope();
-    const list = dashboardScopeTracks();
+    populateScopeSelect('dashScopeSelect');
+    const list = scopeTracksFor('dashScopeSelect');
     const emptyEl = document.getElementById('dashEmpty');
     const bodyEl = document.getElementById('dashBody');
     if(!list.length){
@@ -2474,6 +2561,610 @@ ${playlistNodes}
     renderDashBarList('dashArtists', computeArtistCounts(list));
   }
   document.getElementById('dashScopeSelect').addEventListener('change', renderDashboard);
+
+  // ---------------- data cleaning tab ----------------
+  function persistAllTrackData(){
+    saveJSON(LS_TRACKS, tracks);
+    saveJSON(LS_NOTES, notes);
+    saveJSON(LS_PLAYLISTS, playlists);
+    saveJSON(LS_GENERATED, generated);
+    saveJSON(LS_TRANSITIONS, transitions);
+  }
+
+  function afterTrackFieldEdit(){
+    renderLibrary();
+    renderHealthBar();
+    renderDataClean();
+  }
+
+  function renderGenreFamiliesSummary(){
+    const el = document.getElementById('dcGenreGroups');
+    if(!genreGroups.length){ el.innerHTML = '<div class="empty" style="padding:10px 0;">No genre families set up yet.</div>'; return; }
+    el.innerHTML = '';
+    genreGroups.forEach(g=>{
+      const genreSet = new Set(g.genres);
+      const count = tracks.filter(t=> genreSet.has(effectiveGenre(t))).length;
+      const row = document.createElement('div');
+      row.className = 'cleanrow';
+      row.innerHTML = `<span class="desc"><b>${escapeHtml(g.name)}</b> <span class="from">${g.genres.map(escapeHtml).join(', ')}</span></span><span class="mono" style="color:var(--text-faint);font-size:11.5px;">${count} track${count===1?'':'s'}</span>`;
+      el.appendChild(row);
+    });
+  }
+
+  function computeGenreFillSuggestions(){
+    const byArtist = {};
+    tracks.forEach(t=>{
+      const artist = (t.artist||'').trim();
+      if(!artist) return;
+      (byArtist[artist] = byArtist[artist] || []).push(t);
+    });
+    const suggestions = [];
+    Object.entries(byArtist).forEach(([artist, list])=>{
+      const missing = list.filter(t=>!effectiveGenre(t));
+      if(!missing.length) return;
+      const tagged = list.filter(t=>effectiveGenre(t));
+      if(!tagged.length) return;
+      const counts = {};
+      tagged.forEach(t=>{ const g = effectiveGenre(t); counts[g]=(counts[g]||0)+1; });
+      const [topGenre, topCount] = Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
+      if(topCount/tagged.length < 0.6) return;
+      suggestions.push({ artist, genre: topGenre, missingIds: missing.map(t=>t.id), taggedCount: tagged.length, topCount });
+    });
+    suggestions.sort((a,b)=> b.missingIds.length - a.missingIds.length);
+    return suggestions;
+  }
+
+  function applyGenreFill(s){
+    s.missingIds.forEach(id=>{
+      const t = tracksById[id];
+      if(t && !effectiveGenre(t)) t.genre = s.genre;
+    });
+  }
+
+  function renderGenreFillSuggestions(){
+    const el = document.getElementById('dcGenreFill');
+    const suggestions = computeGenreFillSuggestions();
+    if(!suggestions.length){ el.innerHTML = '<div class="empty" style="padding:10px 0;">No confident suggestions right now — everything left needs a human ear.</div>'; return; }
+    el.innerHTML = '';
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:8px;';
+    const applyAllBtn = document.createElement('button');
+    applyAllBtn.className = 'btn small primary';
+    applyAllBtn.textContent = 'Apply all';
+    applyAllBtn.addEventListener('click', ()=>{
+      suggestions.forEach(applyGenreFill);
+      persistAllTrackData();
+      afterTrackFieldEdit();
+    });
+    header.appendChild(applyAllBtn);
+    el.appendChild(header);
+    suggestions.forEach(s=>{
+      const row = document.createElement('div');
+      row.className = 'cleanrow';
+      row.innerHTML = `<span class="desc"><b>${escapeHtml(s.artist)}</b> → ${escapeHtml(s.genre)} <span class="from">(${s.topCount}/${s.taggedCount} tagged tracks agree · ${s.missingIds.length} track${s.missingIds.length===1?'':'s'} missing)</span></span>`;
+      const btn = document.createElement('button');
+      btn.className = 'btn small';
+      btn.textContent = 'Apply';
+      btn.addEventListener('click', ()=>{
+        applyGenreFill(s);
+        persistAllTrackData();
+        afterTrackFieldEdit();
+      });
+      row.appendChild(btn);
+      el.appendChild(row);
+    });
+  }
+
+  function renderMissingTable(missingKey, missingBpm){
+    const el = document.getElementById('dcMissingTable');
+    const ids = new Set([...missingKey.map(t=>t.id), ...missingBpm.map(t=>t.id)]);
+    const rows = tracks.filter(t=>ids.has(t.id));
+    if(!rows.length){ el.innerHTML = '<div class="empty" style="padding:10px 0;">Nothing missing — key and BPM are filled in on every track.</div>'; return; }
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'max-height:360px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;';
+    const table = document.createElement('table');
+    table.innerHTML = '<thead><tr>'
+      + '<th style="padding:8px 10px;">Track</th>'
+      + '<th style="padding:8px 10px;">Genre</th>'
+      + '<th style="padding:8px 10px;width:90px;">BPM</th>'
+      + '<th style="padding:8px 10px;width:110px;">Key</th>'
+      + '</tr></thead><tbody></tbody>';
+    const tbody = table.querySelector('tbody');
+    rows.forEach(t=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="padding:8px 10px;"><div class="ttitle">${escapeHtml(t.name)}</div><div class="tartist">${escapeHtml(t.artist)}</div></td>
+        <td style="padding:8px 10px;color:var(--text-dim);">${escapeHtml(effectiveGenre(t))||'—'}</td>
+        <td style="padding:8px 10px;"><input type="number" step="0.1" min="0" value="${t.bpm||''}" style="width:76px;"></td>
+        <td style="padding:8px 10px;"><input type="text" value="${escapeHtml(t.key||'')}" style="width:90px;" placeholder="e.g. 8A"></td>
+      `;
+      const bpmInput = tr.querySelector('input[type=number]');
+      const keyInput = tr.querySelector('input[type=text]');
+      bpmInput.addEventListener('change', ()=>{
+        const v = parseFloat(bpmInput.value);
+        t.bpm = (v>0) ? v : 0;
+        persistAllTrackData();
+        afterTrackFieldEdit();
+      });
+      keyInput.addEventListener('change', ()=>{
+        t.key = keyInput.value.trim();
+        persistAllTrackData();
+        afterTrackFieldEdit();
+      });
+      tbody.appendChild(tr);
+    });
+    wrap.appendChild(table);
+    el.innerHTML = '';
+    el.appendChild(wrap);
+  }
+
+  function deleteTrackById(id){
+    const idx = tracks.findIndex(x=>x.id===id);
+    if(idx===-1) return;
+    const t = tracks[idx];
+    const snapshot = {
+      track: t, index: idx, note: notes[id],
+      playlistKeys: playlists.filter(p=>p.trackIds.includes(id)).map(p=>p.key),
+      generatedIds: generated.filter(g=>g.trackIds.includes(id)).map(g=>g.id),
+      transitionRefs: transitions.filter(tr=> tr.from===id || tr.to===id)
+    };
+    function removeRefs(){
+      tracks = tracks.filter(x=>x.id!==id);
+      delete notes[id];
+      playlists.forEach(p=>{ p.trackIds = p.trackIds.filter(x=>x!==id); });
+      generated.forEach(g=>{ g.trackIds = g.trackIds.filter(x=>x!==id); });
+      transitions = transitions.filter(tr=> tr.from!==id && tr.to!==id);
+      reindexTracks();
+      persistAllTrackData();
+      document.getElementById('statusText').textContent = tracks.length ? tracks.length + ' tracks loaded' : '';
+      renderPlaylistList(); renderGeneratedList(); renderSourceList();
+      afterTrackFieldEdit();
+    }
+    removeRefs();
+    setUndo('Removed "'+t.name+'"', ()=>{
+      tracks.splice(Math.min(snapshot.index, tracks.length), 0, t);
+      if(snapshot.note) notes[id] = snapshot.note;
+      playlists.forEach(p=>{ if(snapshot.playlistKeys.includes(p.key)) p.trackIds.push(id); });
+      generated.forEach(g=>{ if(snapshot.generatedIds.includes(g.id)) g.trackIds.push(id); });
+      transitions.push(...snapshot.transitionRefs);
+      reindexTracks();
+      persistAllTrackData();
+      document.getElementById('statusText').textContent = tracks.length ? tracks.length + ' tracks loaded' : '';
+      renderPlaylistList(); renderGeneratedList(); renderSourceList();
+      afterTrackFieldEdit();
+    });
+  }
+
+  function renderDuplicateGroups(dupGroups){
+    const el = document.getElementById('dcDuplicates');
+    if(!dupGroups.length){ el.innerHTML = '<div class="empty" style="padding:10px 0;">No duplicate titles found.</div>'; return; }
+    el.innerHTML = '';
+    dupGroups.forEach(group=>{
+      const card = document.createElement('div');
+      card.className = 'cleanrow';
+      card.style.cssText = 'flex-direction:column;align-items:stretch;gap:8px;';
+      const title = document.createElement('div');
+      title.className = 'desc';
+      title.innerHTML = `<b>${escapeHtml(group[0].name)}</b> <span class="from">${escapeHtml(group[0].artist)} · ${group.length} copies</span>`;
+      card.appendChild(title);
+      group.forEach(t=>{
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:10px;';
+        row.innerHTML = `<span class="mono" style="color:var(--text-faint);font-size:11.5px;flex:1;">${t.bpm?t.bpm.toFixed(1)+' BPM':'no BPM'} · ${t.key||'no key'} · ${escapeHtml(effectiveGenre(t))||'no genre'}</span>`;
+        const btn = document.createElement('button');
+        btn.className = 'btn small danger';
+        btn.textContent = 'Remove this copy';
+        btn.addEventListener('click', async ()=>{
+          if(await customConfirm('Remove this copy of "'+t.name+'"? Its notes and tags will be lost.')){
+            deleteTrackById(t.id);
+          }
+        });
+        row.appendChild(btn);
+        card.appendChild(row);
+      });
+      el.appendChild(card);
+    });
+  }
+
+  document.getElementById('dcManageGroupsBtn').addEventListener('click', ()=>{
+    setPage('builder');
+    const editor = document.getElementById('groupEditor');
+    if(editor.style.display === 'none'){ document.getElementById('manageGroupsBtn').click(); }
+    editor.scrollIntoView({ behavior:'smooth', block:'start' });
+  });
+
+  function renderDataClean(){
+    const page = document.getElementById('pageDataClean');
+    if(!page) return;
+    const missingGenre = tracks.filter(t=>!effectiveGenre(t));
+    const missingKey = tracks.filter(t=>!t.key);
+    const missingBpm = tracks.filter(t=>!t.bpm);
+    const dupGroups = computeDuplicateGroups();
+
+    document.getElementById('dcStats').innerHTML = [
+      { v: missingGenre.length, l: 'missing genre' },
+      { v: missingKey.length, l: 'missing key' },
+      { v: missingBpm.length, l: 'missing BPM' },
+      { v: dupGroups.length, l: 'duplicate group'+(dupGroups.length===1?'':'s') }
+    ].map(s=> `<div class="stattile"><div class="v">${s.v}</div><div class="l">${s.l}</div></div>`).join('');
+
+    renderCleanupSuggestions();
+    renderGenreFamiliesSummary();
+    renderGenreFillSuggestions();
+    renderMissingTable(missingKey, missingBpm);
+    renderDuplicateGroups(dupGroups);
+  }
+
+  // ---------------- graph ----------------
+  const GRAPH_MAX_TRACK_NODES = 220;
+  let graphSim = null;
+  let graphNodeEls = [];
+  let graphEdgeEls = [];
+  let graphAdjacency = [];
+  let graphView = { scale:1, tx:0, ty:0 };
+
+  function graphHubs(){
+    return playlists.map(p=>({ id:'pl:'+p.key, label:p.path, trackIds:p.trackIds }))
+      .concat(generated.map(g=>({ id:'gen:'+g.id, label:g.name, trackIds:g.trackIds })));
+  }
+
+  function buildGraphData(scopeVal){
+    const hubsAll = graphHubs();
+    if(!hubsAll.length) return null;
+    const isAll = !scopeVal || scopeVal==='all';
+    let hubs, trackPool, total;
+    if(isAll){
+      const membership = {};
+      hubsAll.forEach(h=> h.trackIds.forEach(id=>{ membership[id]=(membership[id]||0)+1; }));
+      const ids = Object.keys(membership).sort((a,b)=> membership[b]-membership[a]);
+      total = ids.length;
+      trackPool = new Set(ids.slice(0, GRAPH_MAX_TRACK_NODES));
+      hubs = hubsAll;
+    } else {
+      const hub = hubsAll.find(h=>h.id===scopeVal);
+      if(!hub) return null;
+      total = hub.trackIds.length;
+      trackPool = new Set(hub.trackIds.slice(0, GRAPH_MAX_TRACK_NODES));
+      hubs = hubsAll.filter(h=> h.id===hub.id || h.trackIds.some(id=>trackPool.has(id)));
+    }
+    if(!trackPool.size) return { nodes:[], edges:[], shown:0, total };
+
+    const nodes = [];
+    const nodeIndexById = {};
+    hubs.forEach(h=>{
+      nodeIndexById[h.id] = nodes.length;
+      nodes.push({ id:h.id, kind:'crate', label:h.label, count:h.trackIds.length, r: Math.min(24, 7+Math.sqrt(h.trackIds.length)*2) });
+    });
+    trackPool.forEach(id=>{
+      const t = tracksById[id];
+      if(!t) return;
+      nodeIndexById[id] = nodes.length;
+      nodes.push({ id, kind:'track', label:t.name+' — '+(t.artist||'Unknown'), r:4.5 });
+    });
+
+    const edges = [];
+    hubs.forEach(h=>{
+      h.trackIds.forEach(id=>{
+        if(trackPool.has(id)){
+          edges.push({ a: nodeIndexById[h.id], b: nodeIndexById[id] });
+        }
+      });
+    });
+
+    return { nodes, edges, shown: trackPool.size, total };
+  }
+
+  function buildAdjacency(n, edges){
+    const adj = Array.from({length:n}, ()=> new Set());
+    edges.forEach(e=>{ adj[e.a].add(e.b); adj[e.b].add(e.a); });
+    return adj;
+  }
+
+  function simulate(nodes, edges, width, height){
+    nodes.forEach(node=>{
+      const angle = Math.random()*Math.PI*2;
+      const rad = Math.min(width,height)*0.32*Math.sqrt(Math.random());
+      node.x = width/2 + Math.cos(angle)*rad;
+      node.y = height/2 + Math.sin(angle)*rad;
+      node.vx = 0; node.vy = 0;
+    });
+    return {
+      nodes, edges, width, height, alpha: 1, rafId: null,
+      tick(){
+        const alpha = this.alpha;
+        const n = nodes.length;
+        for(let i=0;i<n;i++){
+          for(let j=i+1;j<n;j++){
+            let dx = nodes[j].x-nodes[i].x, dy = nodes[j].y-nodes[i].y;
+            let d2 = dx*dx+dy*dy; if(d2<25) d2=25;
+            const d = Math.sqrt(d2);
+            const force = (260*alpha)/d2;
+            const fx = dx/d*force, fy = dy/d*force;
+            if(!nodes[i].fixed){ nodes[i].vx -= fx; nodes[i].vy -= fy; }
+            if(!nodes[j].fixed){ nodes[j].vx += fx; nodes[j].vy += fy; }
+          }
+        }
+        edges.forEach(e=>{
+          const A = nodes[e.a], B = nodes[e.b];
+          let dx = B.x-A.x, dy = B.y-A.y;
+          const d = Math.sqrt(dx*dx+dy*dy) || 0.01;
+          const diff = (d-42)/d * 0.4 * alpha;
+          const fx = dx*diff, fy = dy*diff;
+          if(!A.fixed){ A.vx += fx; A.vy += fy; }
+          if(!B.fixed){ B.vx -= fx; B.vy -= fy; }
+        });
+        nodes.forEach(node=>{
+          if(node.fixed) return;
+          node.vx += (width/2-node.x)*0.015*alpha;
+          node.vy += (height/2-node.y)*0.015*alpha;
+          node.vx *= 0.82; node.vy *= 0.82;
+          const speed = Math.hypot(node.vx, node.vy);
+          const maxSpeed = 30;
+          if(speed > maxSpeed){ node.vx = node.vx/speed*maxSpeed; node.vy = node.vy/speed*maxSpeed; }
+          node.x += node.vx; node.y += node.vy;
+        });
+        this.alpha *= 0.98;
+      }
+    };
+  }
+
+  function stopGraphSim(){
+    if(graphSim && graphSim.rafId){ cancelAnimationFrame(graphSim.rafId); graphSim.rafId = null; }
+  }
+
+  function renderGraphPositions(sim){
+    sim.edges.forEach((e,i)=>{
+      const line = graphEdgeEls[i];
+      if(!line) return;
+      const A = sim.nodes[e.a], B = sim.nodes[e.b];
+      line.setAttribute('x1', A.x); line.setAttribute('y1', A.y);
+      line.setAttribute('x2', B.x); line.setAttribute('y2', B.y);
+    });
+    sim.nodes.forEach((node,i)=>{
+      const el = graphNodeEls[i];
+      if(el) el.setAttribute('transform', 'translate('+node.x+','+node.y+')');
+    });
+  }
+
+  function runGraphSim(sim, fitOnSettle){
+    stopGraphSim();
+    function frame(){
+      if(sim.alpha < 0.01){
+        sim.rafId = null;
+        if(fitOnSettle) fitGraphView(sim);
+        return;
+      }
+      sim.tick(); sim.tick();
+      renderGraphPositions(sim);
+      sim.rafId = requestAnimationFrame(frame);
+    }
+    sim.rafId = requestAnimationFrame(frame);
+  }
+
+  function applyGraphTransform(){
+    document.getElementById('graphZoomGroup').setAttribute('transform', 'translate('+graphView.tx+','+graphView.ty+') scale('+graphView.scale+')');
+  }
+  function resetGraphView(){
+    graphView = { scale:1, tx:0, ty:0 };
+    applyGraphTransform();
+  }
+  function fitGraphView(sim){
+    if(!sim.nodes.length) return;
+    let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+    sim.nodes.forEach(node=>{
+      minX = Math.min(minX, node.x-node.r); maxX = Math.max(maxX, node.x+node.r);
+      minY = Math.min(minY, node.y-node.r); maxY = Math.max(maxY, node.y+node.r);
+    });
+    const pad = 40;
+    const bw = Math.max(1, (maxX-minX)+pad*2), bh = Math.max(1, (maxY-minY)+pad*2);
+    const scale = Math.min(4, Math.max(0.3, Math.min(sim.width/bw, sim.height/bh)));
+    const cx = (minX+maxX)/2, cy = (minY+maxY)/2;
+    graphView.scale = scale;
+    graphView.tx = sim.width/2 - cx*scale;
+    graphView.ty = sim.height/2 - cy*scale;
+    applyGraphTransform();
+  }
+
+  function graphClientToSpace(clientX, clientY){
+    const svg = document.getElementById('graphSvg');
+    const rect = svg.getBoundingClientRect();
+    const vb = svg.viewBox.baseVal;
+    const sx = (clientX-rect.left)/rect.width*vb.width;
+    const sy = (clientY-rect.top)/rect.height*vb.height;
+    return { x: (sx-graphView.tx)/graphView.scale, y: (sy-graphView.ty)/graphView.scale };
+  }
+
+  function showGraphTooltip(node){
+    const tip = document.getElementById('graphTooltip');
+    tip.textContent = node.kind==='crate' ? node.label+' — '+node.count+' track'+(node.count===1?'':'s') : node.label;
+    tip.style.display = 'block';
+  }
+  function hideGraphTooltip(){
+    document.getElementById('graphTooltip').style.display = 'none';
+  }
+  function positionGraphTooltip(clientX, clientY){
+    const tip = document.getElementById('graphTooltip');
+    if(tip.style.display !== 'block') return;
+    const wrapRect = document.getElementById('graphCanvasWrap').getBoundingClientRect();
+    tip.style.left = (clientX-wrapRect.left+14)+'px';
+    tip.style.top = (clientY-wrapRect.top+10)+'px';
+  }
+
+  function applyGraphHighlight(){
+    const q = document.getElementById('graphSearchInput').value.trim().toLowerCase();
+    if(!graphSim) return;
+    graphSim.nodes.forEach((node,i)=>{
+      const match = !q || node.label.toLowerCase().includes(q);
+      if(graphNodeEls[i]) graphNodeEls[i].style.opacity = match ? '1' : '0.15';
+    });
+    graphSim.edges.forEach((e,i)=>{
+      const match = !q || graphSim.nodes[e.a].label.toLowerCase().includes(q) || graphSim.nodes[e.b].label.toLowerCase().includes(q);
+      if(graphEdgeEls[i]){ graphEdgeEls[i].style.opacity = match ? '' : '0.06'; }
+    });
+  }
+
+  function focusGraphNode(i){
+    const neighbors = graphAdjacency[i] || new Set();
+    graphNodeEls.forEach((el,j)=>{
+      el.style.opacity = (j===i || neighbors.has(j)) ? '1' : '0.12';
+    });
+    graphEdgeEls.forEach((el,k)=>{
+      const e = graphSim.edges[k];
+      const touches = (e.a===i || e.b===i);
+      el.style.opacity = touches ? '0.9' : '0.05';
+      el.style.stroke = touches ? 'var(--amber)' : '';
+    });
+  }
+  function unfocusGraph(){
+    graphEdgeEls.forEach(el=>{ el.style.opacity=''; el.style.stroke=''; });
+    applyGraphHighlight();
+  }
+
+  function attachNodeDrag(g, node, i){
+    g.addEventListener('pointerdown', e=>{
+      e.stopPropagation();
+      g.setPointerCapture(e.pointerId);
+      node.fixed = true;
+      if(graphSim && graphSim.alpha < 0.05){ graphSim.alpha = 0.3; runGraphSim(graphSim); }
+      function move(ev){
+        const p = graphClientToSpace(ev.clientX, ev.clientY);
+        node.x = p.x; node.y = p.y; node.vx = 0; node.vy = 0;
+        renderGraphPositions(graphSim);
+      }
+      function up(ev){
+        g.releasePointerCapture(e.pointerId);
+        g.removeEventListener('pointermove', move);
+        g.removeEventListener('pointerup', up);
+      }
+      g.addEventListener('pointermove', move);
+      g.addEventListener('pointerup', up);
+    });
+    g.addEventListener('pointerenter', ()=>{ showGraphTooltip(node); focusGraphNode(i); });
+    g.addEventListener('pointermove', e=> positionGraphTooltip(e.clientX, e.clientY));
+    g.addEventListener('pointerleave', ()=>{ hideGraphTooltip(); unfocusGraph(); });
+  }
+
+  let graphPanZoomReady = false;
+  function setupGraphPanZoom(){
+    if(graphPanZoomReady) return;
+    graphPanZoomReady = true;
+    const svg = document.getElementById('graphSvg');
+    svg.addEventListener('pointerdown', e=>{
+      if(e.target.closest('.graphnode')) return;
+      svg.classList.add('panning');
+      svg.setPointerCapture(e.pointerId);
+      const start = { x:e.clientX, y:e.clientY, tx:graphView.tx, ty:graphView.ty };
+      function move(ev){
+        const rect = svg.getBoundingClientRect();
+        const vb = svg.viewBox.baseVal;
+        const dx = (ev.clientX-start.x)/rect.width*vb.width;
+        const dy = (ev.clientY-start.y)/rect.height*vb.height;
+        graphView.tx = start.tx+dx; graphView.ty = start.ty+dy;
+        applyGraphTransform();
+      }
+      function up(ev){
+        svg.classList.remove('panning');
+        svg.releasePointerCapture(e.pointerId);
+        svg.removeEventListener('pointermove', move);
+        svg.removeEventListener('pointerup', up);
+      }
+      svg.addEventListener('pointermove', move);
+      svg.addEventListener('pointerup', up);
+    });
+    svg.addEventListener('wheel', e=>{
+      e.preventDefault();
+      const rect = svg.getBoundingClientRect();
+      const vb = svg.viewBox.baseVal;
+      const mx = (e.clientX-rect.left)/rect.width*vb.width;
+      const my = (e.clientY-rect.top)/rect.height*vb.height;
+      const factor = e.deltaY < 0 ? 1.12 : 1/1.12;
+      const newScale = Math.min(4, Math.max(0.3, graphView.scale*factor));
+      graphView.tx = mx - (mx-graphView.tx)*(newScale/graphView.scale);
+      graphView.ty = my - (my-graphView.ty)*(newScale/graphView.scale);
+      graphView.scale = newScale;
+      applyGraphTransform();
+    }, { passive:false });
+  }
+
+  function renderGraph(){
+    const page = document.getElementById('pageGraph');
+    if(!page) return;
+    setupGraphPanZoom();
+    populateScopeSelect('graphScopeSelect', 'All crates (overview)');
+    stopGraphSim();
+
+    const scopeVal = document.getElementById('graphScopeSelect').value;
+    const data = buildGraphData(scopeVal);
+    const emptyEl = document.getElementById('graphEmpty');
+    const wrap = document.getElementById('graphCanvasWrap');
+    const noteEl = document.getElementById('graphNote');
+
+    if(!data || !data.nodes.length){
+      emptyEl.style.display = 'block';
+      wrap.style.display = 'none';
+      noteEl.textContent = '';
+      return;
+    }
+    emptyEl.style.display = 'none';
+    wrap.style.display = 'block';
+
+    const svg = document.getElementById('graphSvg');
+    const rect = wrap.getBoundingClientRect();
+    const width = Math.max(300, rect.width);
+    const height = wrap.clientHeight || 560;
+    svg.setAttribute('viewBox', '0 0 '+width+' '+height);
+
+    const edgeLayer = document.getElementById('graphEdgeLayer');
+    const nodeLayer = document.getElementById('graphNodeLayer');
+    edgeLayer.innerHTML = '';
+    nodeLayer.innerHTML = '';
+
+    const svgNS = 'http://www.w3.org/2000/svg';
+    graphEdgeEls = data.edges.map(()=>{
+      const line = document.createElementNS(svgNS,'line');
+      line.setAttribute('class','graphedge');
+      edgeLayer.appendChild(line);
+      return line;
+    });
+
+    graphNodeEls = data.nodes.map((node,i)=>{
+      const g = document.createElementNS(svgNS,'g');
+      g.setAttribute('class','graphnode');
+      const circle = document.createElementNS(svgNS,'circle');
+      circle.setAttribute('r', node.r);
+      circle.setAttribute('fill', node.kind==='crate' ? 'var(--amber)' : 'var(--blue)');
+      circle.setAttribute('stroke', 'var(--panel-2)');
+      circle.setAttribute('stroke-width', node.kind==='crate' ? 2 : 1.2);
+      g.appendChild(circle);
+      if(node.kind==='crate'){
+        const text = document.createElementNS(svgNS,'text');
+        text.setAttribute('y', -(node.r+5));
+        text.setAttribute('text-anchor','middle');
+        text.textContent = node.label;
+        g.appendChild(text);
+      }
+      nodeLayer.appendChild(g);
+      attachNodeDrag(g, node, i);
+      return g;
+    });
+
+    graphAdjacency = buildAdjacency(data.nodes.length, data.edges);
+    resetGraphView();
+
+    const sim = simulate(data.nodes, data.edges, width, height);
+    graphSim = sim;
+    runGraphSim(sim, true);
+    applyGraphHighlight();
+
+    noteEl.textContent = data.shown < data.total
+      ? 'Showing the '+data.shown+' most cross-referenced tracks of '+data.total+' — pick a specific crate above to see the rest.'
+      : '';
+  }
+
+  document.getElementById('graphScopeSelect').addEventListener('change', renderGraph);
+  document.getElementById('graphRelayoutBtn').addEventListener('click', renderGraph);
+  document.getElementById('graphResetViewBtn').addEventListener('click', resetGraphView);
+  document.getElementById('graphSearchInput').addEventListener('input', applyGraphHighlight);
 
   // ---------------- init ----------------
   function renderAll(){
