@@ -219,6 +219,30 @@
   .dashkeyaxis span{ flex:1; text-align:center; font-family:var(--mono); font-size:10.5px; color:var(--text-faint); }
 
   /* ---------- graph ---------- */
+  .graphfilterbar{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+  .graphdropdown{ position:relative; }
+  .graphdropbtn{
+    font-family:var(--sans); font-size:12.5px; padding:7px 12px; border-radius:6px;
+    border:1px solid var(--line); background:var(--field); color:var(--text-dim);
+    cursor:pointer; display:flex; align-items:center; gap:7px; white-space:nowrap;
+  }
+  .graphdropbtn:hover{ border-color:var(--text-faint); color:var(--text); }
+  .graphdropdown.open .graphdropbtn{ border-color:var(--amber); color:var(--amber); }
+  .graphdropbtn .car{ font-size:9px; color:var(--text-faint); }
+  .graphdroppanel{
+    display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:20;
+    min-width:210px; max-width:280px; max-height:260px; overflow-y:auto;
+    background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:8px;
+    box-shadow:0 10px 28px rgba(0,0,0,.45);
+  }
+  .graphdropdown.open .graphdroppanel{ display:block; }
+  .graphdroppanel .opt{ display:flex; align-items:center; gap:8px; padding:6px 7px; border-radius:5px; font-size:12.5px; color:var(--text-dim); cursor:pointer; }
+  .graphdroppanel .opt:hover{ background:var(--panel-2); color:var(--text); }
+  .graphdroppanel .opt input[type=checkbox]{ accent-color:var(--amber); }
+  .graphdroppanel .opt .check{ width:12px; display:inline-block; color:var(--amber); font-size:11px; flex-shrink:0; }
+  .graphdroppanel .opt.active{ color:var(--amber); }
+  .graphdroppanel .sep{ height:1px; background:var(--line-soft); margin:6px 2px; }
+  .graphdroppanel .rangepair{ margin:2px; }
   .graphtoolbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
   .graphtoolbar select, .graphtoolbar input[type=text]{ font-size:12px; padding:7px 9px; }
   .graphlegend{ font-family:var(--mono); font-size:11px; color:var(--text-faint); display:flex; align-items:center; gap:5px; margin-left:auto; }
@@ -515,34 +539,32 @@
           <h2>Graph</h2>
           <p class="note" style="margin:-8px 0 16px;">Tracks connected to the crates they belong to — pick one or more crates to focus on them, narrow by genre, BPM or key, or leave everything selected to see how the whole library is structured.</p>
 
-          <div class="step" style="border:none; padding-left:0; margin-bottom:14px;">
-            <div class="steplabel">crates</div>
-            <div class="sourcelist" id="graphCrateChips"></div>
-          </div>
-
-          <div class="filtergrid" style="margin-bottom:14px;">
-            <div>
-              <label>BPM range</label>
-              <div class="rangepair">
-                <input type="number" id="graphBpmMin" placeholder="min">
-                <input type="number" id="graphBpmMax" placeholder="max">
+          <div class="graphfilterbar">
+            <div class="graphdropdown" id="graphCrateDropdown">
+              <button type="button" class="graphdropbtn" id="graphCrateDropBtn">Crates: All <span class="car">▾</span></button>
+              <div class="graphdroppanel" id="graphCratePanel"></div>
+            </div>
+            <div class="graphdropdown" id="graphGenreDropdown">
+              <button type="button" class="graphdropbtn" id="graphGenreDropBtn">Genres: All <span class="car">▾</span></button>
+              <div class="graphdroppanel" id="graphGenrePanel"></div>
+            </div>
+            <div class="graphdropdown" id="graphBpmDropdown">
+              <button type="button" class="graphdropbtn" id="graphBpmDropBtn">BPM: any <span class="car">▾</span></button>
+              <div class="graphdroppanel" id="graphBpmPanel">
+                <div class="rangepair">
+                  <input type="number" id="graphBpmMin" placeholder="min">
+                  <input type="number" id="graphBpmMax" placeholder="max">
+                </div>
               </div>
             </div>
-            <div>
-              <label>Key</label>
-              <select id="graphKeySelect"><option value="">Any key</option></select>
-            </div>
-            <div>
-              <label>Genres</label>
-              <div class="chiprow" id="graphGenreChips"></div>
-            </div>
+            <select id="graphKeySelect" class="mono"><option value="">Any key</option></select>
+            <button class="btn ghost small" id="graphClearFiltersBtn">Clear filters</button>
           </div>
 
           <div class="graphtoolbar">
             <input type="text" id="graphSearchInput" placeholder="highlight a track, artist or crate…" style="min-width:220px;">
             <button class="btn ghost small" id="graphRelayoutBtn">Re-layout</button>
             <button class="btn ghost small" id="graphResetViewBtn">Reset view</button>
-            <button class="btn ghost small" id="graphClearFiltersBtn">Clear filters</button>
             <span class="graphlegend"><span class="sw crate"></span>Crate<span class="sw track"></span>Track</span>
           </div>
           <div id="graphEmpty" class="empty" style="display:none;">Build or import at least one crate to see connections.</div>
@@ -2840,23 +2862,71 @@ ${playlistNodes}
     renderGraph();
   }
 
-  function renderGraphCrateChips(){
-    const el = document.getElementById('graphCrateChips');
+  function closeAllGraphDropdowns(except){
+    document.querySelectorAll('.graphdropdown.open').forEach(d=>{ if(d!==except) d.classList.remove('open'); });
+  }
+  let graphDropdownsReady = false;
+  function setupGraphDropdowns(){
+    if(graphDropdownsReady) return;
+    graphDropdownsReady = true;
+    document.querySelectorAll('.graphdropdown').forEach(wrap=>{
+      const btn = wrap.querySelector('.graphdropbtn');
+      btn.addEventListener('click', e=>{
+        e.stopPropagation();
+        const willOpen = !wrap.classList.contains('open');
+        closeAllGraphDropdowns();
+        if(willOpen) wrap.classList.add('open');
+      });
+      wrap.querySelector('.graphdroppanel').addEventListener('click', e=> e.stopPropagation());
+    });
+    document.addEventListener('click', ()=> closeAllGraphDropdowns());
+  }
+
+  function updateGraphCrateLabel(){
+    const btn = document.getElementById('graphCrateDropBtn');
+    const n = graphSelectedCrates.size;
+    btn.innerHTML = (n===0 ? 'Crates: All' : 'Crates: '+n+' selected') + ' <span class="car">▾</span>';
+  }
+  function updateGraphGenreLabel(){
+    const btn = document.getElementById('graphGenreDropBtn');
+    const n = graphSelectedGenres.size;
+    btn.innerHTML = (n===0 ? 'Genres: All' : 'Genres: '+n+' selected') + ' <span class="car">▾</span>';
+  }
+  function updateGraphBpmLabel(){
+    const btn = document.getElementById('graphBpmDropBtn');
+    const min = document.getElementById('graphBpmMin').value;
+    const max = document.getElementById('graphBpmMax').value;
+    let label = 'BPM: any';
+    if(min && max) label = 'BPM: '+min+'–'+max;
+    else if(min) label = 'BPM: ≥'+min;
+    else if(max) label = 'BPM: ≤'+max;
+    btn.innerHTML = label + ' <span class="car">▾</span>';
+  }
+
+  function renderGraphCratePanel(){
+    const el = document.getElementById('graphCratePanel');
     const hubs = graphHubs();
     el.innerHTML = '';
-    if(!hubs.length){ el.innerHTML = '<span class="crate-empty">no crates yet</span>'; return; }
-    const allChip = document.createElement('div');
-    allChip.className = 'sourcechip' + (graphSelectedCrates.size===0 ? ' on' : '');
-    allChip.textContent = 'All crates';
-    allChip.addEventListener('click', ()=> toggleGraphCrate('__all__'));
-    el.appendChild(allChip);
+    if(!hubs.length){ el.innerHTML = '<div class="crate-empty" style="padding:6px;">no crates yet</div>'; updateGraphCrateLabel(); return; }
+    const allRow = document.createElement('div');
+    allRow.className = 'opt' + (graphSelectedCrates.size===0 ? ' active' : '');
+    allRow.innerHTML = '<span class="check">'+(graphSelectedCrates.size===0?'✓':'')+'</span><span>All crates</span>';
+    allRow.addEventListener('click', ()=> toggleGraphCrate('__all__'));
+    el.appendChild(allRow);
+    const sep = document.createElement('div'); sep.className = 'sep'; el.appendChild(sep);
     hubs.forEach(h=>{
-      const chip = document.createElement('div');
-      chip.className = 'sourcechip' + (graphSelectedCrates.has(h.id) ? ' on' : '');
-      chip.textContent = h.label;
-      chip.addEventListener('click', ()=> toggleGraphCrate(h.id));
-      el.appendChild(chip);
+      const row = document.createElement('label');
+      row.className = 'opt';
+      const chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.checked = graphSelectedCrates.has(h.id);
+      chk.addEventListener('change', ()=> toggleGraphCrate(h.id));
+      const span = document.createElement('span');
+      span.textContent = h.label;
+      row.appendChild(chk); row.appendChild(span);
+      el.appendChild(row);
     });
+    updateGraphCrateLabel();
   }
 
   function populateGraphKeySelect(){
@@ -2867,21 +2937,33 @@ ${playlistNodes}
     if(Array.from(sel.options).some(o=>o.value===prev)) sel.value = prev;
   }
 
-  function renderGraphGenreChips(){
-    const el = document.getElementById('graphGenreChips');
+  function renderGraphGenrePanel(){
+    const el = document.getElementById('graphGenrePanel');
     const genres = allDistinctGenres();
     el.innerHTML = '';
-    if(!genres.length){ el.innerHTML = '<span class="crate-empty">no genre data</span>'; return; }
+    if(!genres.length){ el.innerHTML = '<div class="crate-empty" style="padding:6px;">no genre data</div>'; updateGraphGenreLabel(); return; }
+    const allRow = document.createElement('div');
+    allRow.className = 'opt' + (graphSelectedGenres.size===0 ? ' active' : '');
+    allRow.innerHTML = '<span class="check">'+(graphSelectedGenres.size===0?'✓':'')+'</span><span>All genres</span>';
+    allRow.addEventListener('click', ()=>{ graphSelectedGenres = new Set(); renderGraph(); });
+    el.appendChild(allRow);
+    const sep = document.createElement('div'); sep.className = 'sep'; el.appendChild(sep);
     genres.forEach(g=>{
-      const chip = document.createElement('div');
-      chip.className = 'genrechip' + (graphSelectedGenres.has(g) ? ' on' : '');
-      chip.textContent = g;
-      chip.addEventListener('click', ()=>{
+      const row = document.createElement('label');
+      row.className = 'opt';
+      const chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.checked = graphSelectedGenres.has(g);
+      chk.addEventListener('change', ()=>{
         if(graphSelectedGenres.has(g)) graphSelectedGenres.delete(g); else graphSelectedGenres.add(g);
         renderGraph();
       });
-      el.appendChild(chip);
+      const span = document.createElement('span');
+      span.textContent = g;
+      row.appendChild(chk); row.appendChild(span);
+      el.appendChild(row);
     });
+    updateGraphGenreLabel();
   }
 
   function buildGraphData(){
@@ -3186,9 +3268,11 @@ ${playlistNodes}
     const page = document.getElementById('pageGraph');
     if(!page) return;
     setupGraphPanZoom();
-    renderGraphCrateChips();
+    setupGraphDropdowns();
+    renderGraphCratePanel();
     populateGraphKeySelect();
-    renderGraphGenreChips();
+    renderGraphGenrePanel();
+    updateGraphBpmLabel();
     stopGraphSim();
 
     const data = buildGraphData();

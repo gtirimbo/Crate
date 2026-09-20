@@ -79,7 +79,7 @@
       <a href="#quickstart">Quickstart</a>
       <a href="#library">Library</a>
       <a class="sub" href="#lib-import">Importing</a>
-      <a class="sub" href="#lib-health">Health & cleanup</a>
+      <a class="sub" href="#lib-health">Health checks</a>
       <a class="sub" href="#lib-bulk">Bulk actions</a>
       <a class="sub" href="#lib-notes">Notes & transitions</a>
       <a href="#builder">Builder</a>
@@ -88,13 +88,21 @@
       <a class="sub" href="#build-order">Ordering</a>
       <a class="sub" href="#build-recipes">Recipes</a>
       <a href="#gigs">Gigs</a>
-      <a href="#export">Exporting</a>
+      <a href="#dashboard">Dashboard</a>
+      <a href="#dataclean">Data Cleaning</a>
+      <a class="sub" href="#dc-genre">Genre spelling</a>
+      <a class="sub" href="#dc-fill">Filling missing genre</a>
+      <a class="sub" href="#dc-missing">Missing key & BPM</a>
+      <a class="sub" href="#dc-dupes">Duplicates</a>
+      <a href="#graph">Graph</a>
+      <a href="#export">Exporting & backing up</a>
+      <a class="sub" href="#export-db">Save & load database</a>
       <a href="#troubleshoot">Troubleshooting</a>
     </div>
 
     <main>
       <h1>Guide</h1>
-      <p class="lede">Everything Crate does, organized the way you'll actually move through the app — Library, then Builder, then Gigs.</p>
+      <p class="lede">Everything Crate does, organized the way you'll actually move through the app — Library, then Builder, then Gigs, then Dashboard, Data Cleaning and Graph for understanding and tidying up what you've got.</p>
 
       <div class="section" id="quickstart">
         <h2>Quickstart</h2>
@@ -114,9 +122,9 @@
         <p>Only a Rekordbox XML export works as input — not the app's database file directly. Re-import any time your library changes in Rekordbox; Crate will show a banner summarizing what changed since last time (new tracks, removed tracks, crates that changed).</p>
         <p>The <b>Crates</b> sidebar shows two groups after import: <b>from rekordbox</b> (your actual Rekordbox playlists, including folders) and <b>from folders</b> (grouped by the folder each file lives in on disk — useful if your Rekordbox playlist tree is empty or doesn't match how you actually organize things).</p>
 
-        <h3 id="lib-health">Health & cleanup</h3>
+        <h3 id="lib-health">Health checks</h3>
         <p>A row of chips at the top of the Library flags tracks missing genre, key, or BPM, tracks not in any crate, and likely duplicates. Click a chip to scope the table to just those tracks.</p>
-        <p>Below that, Crate scans your genre tags for likely spelling variants (<code>"Deep House"</code> vs <code>"deep house"</code>) and suggests merging them — click <b>Merge</b> on one, or <b>Apply all</b>.</p>
+        <p>These chips are for browsing and filtering. To actually fix any of it — merge genre spellings, fill in missing fields, remove duplicates — head to <a href="#dataclean">Data Cleaning</a>.</p>
 
         <h3 id="lib-bulk">Bulk actions</h3>
         <p>Select multiple rows with the checkboxes, then use the bar that appears to add a tag to all of them at once, or add them all to an existing (or brand new) crate.</p>
@@ -155,15 +163,82 @@
         <p><b>Export set sheet</b> downloads a clean, printable page for the whole gig (or for a single crate, from the "Sheet" button in the sidebar) — open it in a browser and print, or Print → Save as PDF.</p>
       </div>
 
+      <div class="section" id="dashboard">
+        <h2>Dashboard</h2>
+        <p>A read-only overview of your library, or any single crate, as a handful of charts — for understanding what you've got before you build with the Builder or tidy it up in Data Cleaning. Nothing on this page is editable.</p>
+        <p>The dropdown at the top switches what everything below describes: <b>Whole library</b> by default, or any Rekordbox crate, folder group, or crate you've built with Crate.</p>
+        <ul>
+          <li><b>Stat tiles</b> — track count, total playtime, average BPM, and how many distinct genres and artists are in the current scope.</li>
+          <li><b>Genres</b> — the top 10 genres by track count, with everything else folded into "Other".</li>
+          <li><b>BPM distribution</b> — a histogram of tempos across the scope, so you can see at a glance whether it skews fast, slow, or spread out.</li>
+          <li><b>BPM range by genre</b> — for your biggest genres, the min-to-max tempo spread and the average, so you can spot which genres run tight and which run wide.</li>
+          <li><b>Key distribution</b> — every Camelot position, split by major and minor, so you can see which keys you're light on.</li>
+          <li><b>Top artists</b> — your most-represented artists in the current scope.</li>
+        </ul>
+      </div>
+
+      <div class="section" id="dataclean">
+        <h2>Data Cleaning</h2>
+        <p>Everything about tidying up your metadata lives here — genre spelling, missing fields, duplicates. Nothing applies itself; every suggestion is a button you press after reviewing it, and the stat tiles at the top track how much is left as you work through them.</p>
+
+        <h3 id="dc-genre">Genre spelling cleanup</h3>
+        <p>Crate scans your genre tags for likely spelling variants (<code>"Deep House"</code> vs <code>"deep house"</code>) and suggests merging them. Click <b>Merge</b> on one suggestion, or <b>Apply all</b>. This changes how genres display and filter inside Crate — it doesn't rewrite the original Genre tag in your Rekordbox library.</p>
+
+        <h3>Genre families</h3>
+        <p>A read-only summary of the genre groups you've set up (see <a href="#build-filters">Filters & genre groups</a>), with how many tracks fall in each. <b>Manage groups in Build a new crate →</b> jumps straight to editing them.</p>
+
+        <h3 id="dc-fill">Fill missing genre from artist</h3>
+        <p>When most of an artist's tagged tracks agree on one genre, Crate suggests applying that same genre to their untagged tracks — for example "DJ Alpha → House (4/5 tagged tracks agree)". Review and click <b>Apply</b> per artist, or <b>Apply all</b>.</p>
+        <div class="callout">Crate only ever suggests filling in <b>genre</b> this way — never BPM or key. Those come from Rekordbox's own audio analysis, and a guess that's wrong could genuinely throw off a mix. Missing key and BPM are left for you to fill in by ear instead.</div>
+
+        <h3 id="dc-missing">Missing key & BPM</h3>
+        <p>A scrollable worklist of every track missing a key or BPM, with inline fields to type the value in yourself. Changes save as soon as you move out of the field — there's no separate save button.</p>
+
+        <h3 id="dc-dupes">Possible duplicates</h3>
+        <p>Tracks matched by identical title + artist, grouped together with their BPM/key/genre shown side by side so you can tell copies apart. <b>Remove this copy</b> deletes a track entirely — including from every crate it belongs to, and its notes and tags — so check which copy you actually want to keep first. It's reversible with the Undo bar that appears, but only for the single most recent removal.</p>
+      </div>
+
+      <div class="section" id="graph">
+        <h2>Graph</h2>
+        <p>A visual map of how your crates and tracks connect. Amber circles are crates, sized by how many tracks are shown; blue dots are tracks; a line means "this track is in this crate." A track that sits in several crates shows up as a hub with several lines running to it — a quick way to spot the tracks that cross over between sets.</p>
+
+        <h3>Crates and filters</h3>
+        <p>Four dropdowns above the canvas control what's drawn:</p>
+        <ul>
+          <li><b>Crates</b> — check one or more specific crates to focus on them, or leave "All crates" checked to see the whole library's structure at once.</li>
+          <li><b>Genres</b> — show only tracks in one or more genres.</li>
+          <li><b>BPM</b> — a min/max range.</li>
+          <li><b>Key</b> — one Camelot key, matched harmonically the same way the Builder's key filter works.</li>
+        </ul>
+        <p>Crate selection and filters combine — a crate's circle disappears once none of its tracks survive the current filters. <b>Clear filters</b> resets genre/BPM/key without touching which crates are selected.</p>
+
+        <h3>Reading and moving around</h3>
+        <ul>
+          <li>Drag the canvas background to pan, scroll or pinch to zoom.</li>
+          <li>Drag any node to reposition it — it stays where you drop it.</li>
+          <li>Hover a node to highlight everything it connects to, dim the rest, and see a tooltip naming it.</li>
+          <li>Type in the search box to highlight matching tracks, artists, or crate names instead of hiding the rest.</li>
+          <li><b>Re-layout</b> reshuffles the physics simulation from scratch; <b>Reset view</b> re-centers and re-zooms without touching the layout itself.</li>
+        </ul>
+        <div class="callout">A very large selection only draws the ~200 most cross-referenced tracks, and says so in a note under the canvas. Narrow the crate selection or add a filter to see the rest.</div>
+      </div>
+
       <div class="section" id="export">
-        <h2>Exporting back to Rekordbox</h2>
+        <h2>Exporting & backing up</h2>
+
+        <h3>Back to Rekordbox and beyond</h3>
         <ul>
           <li><b>.m3u8</b> — fastest for one crate at a time. Drag it into Rekordbox's Playlists panel, or right-click → Import Playlist. Needs the same file paths Crate read at import — if anything's on an external drive, that drive needs to be plugged in.</li>
           <li><b>Merged XML</b> — brings in everything at once, as a new "Crate" folder inside your library. Needs the original XML in memory that session (re-import if you've reloaded the page since).</li>
-          <li><b>CSV</b> — for spreadsheets, sharing with a promoter, or anything outside Rekordbox entirely.</li>
+          <li><b>CSV</b> — for spreadsheets, sharing with a promoter, or anything outside Rekordbox entirely. Available for the whole Library too, not just a built crate.</li>
           <li><b>Traktor NML</b> — <span style="color:var(--red);">experimental</span>, unverified against a real Traktor library. Test on a small crate first.</li>
         </ul>
         <div class="callout trouble"><b>Back up your Rekordbox library</b> before importing any file Crate generates, the same way you'd back up before any third-party tool touches your setup.</div>
+
+        <h3 id="export-db">Save & load database</h3>
+        <p><b>Save database</b>, in the header, downloads a single JSON file with your tracks, your notes and tags, and every crate you've built with Crate. It's not a Rekordbox file; it's Crate's own backup format, meant for moving to another browser or device, or just keeping a safety copy. <b>Load database</b> brings that file back in.</p>
+        <div class="callout trouble"><b>It doesn't cover everything.</b> Recipes, gigs, genre groups, genre-spelling merges, and "mixes well into" links aren't included in a database file today — only tracks, notes/tags, and generated crates are. Rebuild those manually after loading a database on a new browser or device.</div>
+        <div class="callout">Crate's library lives only in this browser's local storage — nothing is synced anywhere. Clearing this browser's site data, or switching browsers or devices, means starting over unless you've saved a database file first. Loading a database also can't restore the <b>Export updated XML</b> button for that session — re-import the original Rekordbox XML once if you need that specific export.</div>
       </div>
 
       <div class="section" id="troubleshoot">
@@ -173,6 +248,9 @@
         <div class="callout trouble"><b>Key filtering doesn't match anything</b><br>Check Rekordbox is set to show keys in Camelot notation, or that your keys aren't in an unusual format the standard-notation converter doesn't recognize.</div>
         <div class="callout trouble"><b>Export XML button is disabled</b><br>It needs your original XML file in memory for that session — re-import it once, then export.</div>
         <div class="callout trouble"><b>.m3u8 won't import, or tracks show as missing</b><br>Usually a file path issue — an external drive isn't mounted, or files moved since the export. Re-export from Rekordbox with the drive connected.</div>
+        <div class="callout trouble"><b>Data Cleaning didn't suggest a value for a missing BPM or key</b><br>That's deliberate, not a bug — those come from Rekordbox's own audio analysis, and Crate won't guess at them. Fill them in by ear in the worklist there.</div>
+        <div class="callout trouble"><b>Graph shows fewer tracks than a crate actually has</b><br>Large selections cap at roughly 200 tracks, keeping the most cross-referenced ones — the note under the canvas says when this happens. Select fewer crates, or add a genre/BPM/key filter, to see the rest.</div>
+        <div class="callout trouble"><b>My tags, notes, or built crates are gone</b><br>Crate's library lives only in this browser's local storage. Clearing this browser's site data, using a private/incognito window, or switching browsers or devices starts you over. Use <b>Save database</b> regularly if you want a backup you can restore from.</div>
       </div>
 
     </main>
