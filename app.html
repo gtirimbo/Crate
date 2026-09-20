@@ -271,7 +271,9 @@
   .graphnode{ cursor:pointer; }
   .graphnode text{ font-family:var(--mono); font-size:9.5px; fill:var(--text-dim); pointer-events:none; }
   .graphedge{ stroke:var(--line); stroke-width:1; }
-  .graphtooltip{ position:absolute; pointer-events:none; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:6px 9px; font-size:11.5px; color:var(--text); box-shadow:0 4px 14px rgba(0,0,0,.4); display:none; white-space:nowrap; z-index:5; }
+  .floattip{ position:absolute; pointer-events:none; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:6px 9px; font-size:11.5px; color:var(--text); box-shadow:0 4px 14px rgba(0,0,0,.4); display:none; white-space:nowrap; z-index:5; }
+  .arcdot{ cursor:pointer; transition:r .12s ease; }
+  .arcdot:hover{ r:4.6; }
   .graphnote{ font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-top:10px; }
 </style>
 </head>
@@ -449,10 +451,11 @@
           <div class="resultbar">
             <span class="resultcount" id="resultCount">0 tracks match</span>
           </div>
-          <div id="arcWrap" style="display:none;margin-bottom:14px;">
+          <div id="arcWrap" style="display:none;margin-bottom:14px;position:relative;">
             <svg id="arcChart" viewBox="0 0 600 100" style="width:100%;height:90px;display:block;"></svg>
+            <div class="floattip" id="arcTooltip"></div>
             <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--text-faint);margin-top:2px;flex-wrap:wrap;gap:6px;">
-              <span>BPM over the set — line height is tempo, dot color is Camelot letter (A/B)</span>
+              <span>BPM over the set — line height is tempo, dot color is Camelot letter (A/B). Hover a dot for the track.</span>
               <span id="arcShapeLabel" style="color:var(--amber);"></span>
             </div>
           </div>
@@ -595,7 +598,7 @@
                 <g id="graphNodeLayer"></g>
               </g>
             </svg>
-            <div class="graphtooltip" id="graphTooltip"></div>
+            <div class="floattip" id="graphTooltip"></div>
           </div>
           <p class="graphnote" id="graphNote"></p>
         </div>
@@ -2059,13 +2062,35 @@
       points.push(x.toFixed(1)+','+y.toFixed(1));
       const k = parseCamelot(t.key);
       const color = k ? (k.letter==='A' ? 'var(--amber)' : 'var(--green)') : 'var(--text-faint)';
-      const label = escapeHtml(t.name)+' — '+(t.bpm?t.bpm.toFixed(1):'?')+' BPM'+(t.key?(' · '+escapeHtml(t.key)):'');
-      dots += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6" fill="${color}"><title>${label}</title></circle>`;
+      const label = escapeHtml(t.name)+' — '+escapeHtml(t.artist||'')+' · '+(t.bpm?t.bpm.toFixed(1):'?')+' BPM'+(t.key?(' · '+escapeHtml(t.key)):'');
+      dots += `<circle class="arcdot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6" fill="${color}" data-label="${label}"></circle>`;
     });
     svg.innerHTML = `<polyline points="${points.join(' ')}" fill="none" stroke="var(--line)" stroke-width="1.2"/>` + dots;
     wrap.style.display = 'block';
     shapeLabel.textContent = classifyEnergyShape(list);
   }
+
+  let arcTooltipReady = false;
+  function setupArcTooltip(){
+    if(arcTooltipReady) return;
+    arcTooltipReady = true;
+    const svg = document.getElementById('arcChart');
+    const tip = document.getElementById('arcTooltip');
+    const wrap = document.getElementById('arcWrap');
+    svg.addEventListener('pointermove', e=>{
+      if(e.target.tagName !== 'circle'){
+        tip.style.display = 'none';
+        return;
+      }
+      tip.textContent = e.target.getAttribute('data-label');
+      tip.style.display = 'block';
+      const wrapRect = wrap.getBoundingClientRect();
+      tip.style.left = (e.clientX - wrapRect.left + 12) + 'px';
+      tip.style.top = (e.clientY - wrapRect.top + 10) + 'px';
+    });
+    svg.addEventListener('pointerleave', ()=>{ tip.style.display = 'none'; });
+  }
+  setupArcTooltip();
 
   ['bpmMin','bpmMax','keySelect','textFilter','orderSelect'].forEach(id=>{
     document.getElementById(id).addEventListener('input', updateBuilder);
