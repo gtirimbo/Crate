@@ -6,19 +6,20 @@
 <title>Crate — organize your Rekordbox library, build what plays next</title>
 <meta name="description" content="A free, local-only tool that reads your Rekordbox XML export, helps you organize and clean up your library, and builds new crates from it.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#1c1a17; --panel:#242119; --panel-2:#1f1c16; --field:#19170f;
     --line:#3a352c; --line-soft:#2c281f;
     --text:#efe9dd; --text-dim:#a39b8a; --text-faint:#726a5b;
     --amber:#ffb238; --green:#8cff9e; --red:#ff6b5c;
-    --sans:'Space Grotesk', system-ui, sans-serif;
+    --sans:'Helvetica Neue', Helvetica, Arial, sans-serif;
     --mono:'IBM Plex Mono', ui-monospace, monospace;
   }
   *{box-sizing:border-box;}
   html,body{ margin:0; padding:0; }
-  body{ background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.5; }
+  body{ background:var(--bg); color:var(--text); font-family:var(--sans); font-weight:300; line-height:1.5; }
+  h1, h2, h3, h4, h5, h6, b, strong{ font-weight:400; }
   ::selection{ background:var(--amber); color:#1c1a17; }
   a{ color:var(--amber); }
   .wrap{ max-width:980px; margin:0 auto; padding:0 20px; }
@@ -27,13 +28,13 @@
     display:flex; align-items:center; justify-content:space-between;
     padding:20px 0; border-bottom:1px solid var(--line);
   }
-  nav .logo{ font-size:19px; font-weight:600; letter-spacing:-0.01em; color:var(--text); text-decoration:none; }
+  nav .logo{ font-size:19px; font-weight:400; letter-spacing:-0.01em; color:var(--text); text-decoration:none; }
   nav .links{ display:flex; align-items:center; gap:22px; font-size:14px; }
   nav .links a{ color:var(--text-dim); text-decoration:none; }
   nav .links a:hover{ color:var(--text); }
   nav .kofi{
     background:var(--amber); color:#1c1a17; padding:8px 16px; border-radius:20px;
-    font-weight:600; font-size:13px;
+    font-weight:400; font-size:13px;
   }
 
   header.hero{ padding:70px 0 50px; }
@@ -41,7 +42,7 @@
   header.hero p.lede{ font-size:17px; color:var(--text-dim); max-width:520px; margin:0 0 30px; }
   .cta-row{ display:flex; gap:12px; flex-wrap:wrap; }
   .btn{
-    display:inline-block; font-family:var(--sans); font-weight:600; font-size:14.5px;
+    display:inline-block; font-family:var(--sans); font-weight:400; font-size:14.5px;
     padding:13px 24px; border-radius:8px; text-decoration:none; border:1px solid var(--line);
   }
   .btn.primary{ background:var(--amber); color:#1c1a17; border-color:var(--amber); }
